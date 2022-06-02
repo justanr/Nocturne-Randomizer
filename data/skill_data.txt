@@ -77,7 +77,7 @@
 0BD Holy Wrath 11 1
 0C2 Starlight 100 1
 07F Godly Light 100 1
-11F God's Bow 100 1
+11F God's Bow 100 2
 13E Anti Expel 5 0
 148 Void Expel 8 0
 073 Sacrifice 6 1
@@ -271,3 +271,10 @@
 109 Provoke 100 1
 112 Holy Star 100 1
 114 Red Capote 100 1
+0F4 Icy Death 100 1
+101 Fire of Sinai 100 1
+104 Death Flies 100 2
+0C9 Bael's Bane 100 1
+0A8 Tentacle 100 1
+099 Foul Havoc 100 1
+0FE Phase Shift 100 1

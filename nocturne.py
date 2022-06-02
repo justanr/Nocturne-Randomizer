@@ -25,6 +25,19 @@ PHYS_INVALID_DEMONS = [2, 14, 87, 93, 98, 104, 105, 144, 155, 172, 202, 269, 274
 # demons/bosses that are normally in the hospital/shibuya
 BASE_DEMONS = [61, 137, 92, 97, 131, 91, 126, 103, 135, 136]
 
+DRAGON_EYE_DEMONS = {#[73, 56, 100, 113, 116, 110, 89, 144, 71]
+    73: 0x69, #Eligor
+    56: 0x6c, #Setanta
+    100: 0x6d, #Yaksini
+    113: 0x6e, #Loki
+    116: 0x42, #Queen Mab
+    110: 0x6f, #Aciel
+    89: 0x6c, #Sarutahiko
+    144: 0x6a, #Arahabaki
+    71: 0x6c #Ose
+}
+
+
 SHADY_BROKER = {
     167: 208,        # Pisaca
     124: 209,        # Nue
@@ -254,6 +267,10 @@ def write_demon(rom, demon, offset):
 
     # don't change boss ai or skills
     if not demon.is_boss:
+        #if rom.read_halfword(demon.ai_offset) != 0x46:
+        #    print(demon.name)
+        #    print(rom.read_halfword(demon.ai_offset))
+
         # zero out old battle skills
         rom.write(struct.pack('<16x'), offset + 0x22)
 
@@ -263,6 +280,8 @@ def write_demon(rom, demon, offset):
 
         write_skills(rom, demon)
         write_ai(rom, demon)
+
+
 
 def write_demons(rom, new_demons):
     for demon in new_demons:
@@ -286,10 +305,13 @@ def write_skills(rom, demon):
         rom.write_halfword(skill['skill_id'])
 
 def write_ai(rom, demon):
-    # get rid of special demon ai scripts
-    if rom.read_halfword(demon.ai_offset) != 0x46:
+    # get rid of special demon ai scripts, except for dragon eye scripts
+    #if rom.read_halfword(demon.ai_offset) not in [0x46, 0x69, 0x6a, 0x6b, 0x6c, 0x6d, 0x6e, 0x6f, 0x79]:
+    if demon.old_id not in DRAGON_EYE_DEMONS.keys():
         # 0x46 is the default I think?
         rom.write_halfword(0x46, demon.ai_offset)
+    else:
+        rom.write_halfword(DRAGON_EYE_DEMONS[demon.old_id], demon.ai_offset)
 
     # todo: make generating odds more random
     total_odds = [

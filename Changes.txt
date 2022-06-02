@@ -52,3 +52,10 @@ version 0.2.2
 * Two music flags have been added: m for random boss music, and l for location based boss music
 * The odds of a demon with no unique skills gaining 1 has been lowered form 10% to 7%
 * Muspell is no longer a valid prerequisite to ailment-based bosses
+
+version 0.2.3
+* Ongyo-Ki's exp and macca decreased
+* normal enemy checks that can use beast eye/dragon eye have had their ai-scripts restored
+for whichever demon replaces them
+* Added new unique skills: Fire of Sinai, Death Flies, Icy Death, Foul Havoc, Tentacle, Bael's Bane,
+and Phase Shift

@@ -420,6 +420,7 @@ class Randomizer:
                 new_demon.skills, new_demon.battle_skills = self.randomize_skills(new_demon, skill)
             else:
                 new_demon.skills, new_demon.battle_skills = self.randomize_skills(new_demon)
+            new_demon.old_id = old_demon.ind #keep track of who is replaced
             new_demons.append(new_demon)
 
         return new_demons
@@ -564,8 +565,8 @@ class Randomizer:
                     new_hp = min(new_hp, 4000)
                 if new_boss_demon.name == "Ongyo-Ki (Boss)":
                     new_hp = round(new_hp / 4)
-                    new_exp = round(new_exp / 4)
-                    new_macca = round(new_macca / 4)
+                    new_exp = round(new_exp / 18)
+                    new_macca = round(new_macca / 18)
                 if new_boss_demon.name not in self.always_goes_first:
                     boss_battle.goes_first = 0x0D
                 #balanced_demon = self.rebalance_demon(new_boss_demon, new_level, new_hp=new_hp, new_mp=new_mp, new_exp=new_exp, new_macca=new_macca, exp_mod=self.config_exp_modifier, stat_mod=1)
@@ -626,8 +627,6 @@ class Randomizer:
                #music randomizer, 8 is maybe kagutsuchi phase 2?
                boss_battle.music = random.choice([5, 6, 7, 8, 9, 10, 11, 12, 13, 14])
 
-            
-            
 
 
             #Sakahagi returns?

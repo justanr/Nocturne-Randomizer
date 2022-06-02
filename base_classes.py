@@ -224,6 +224,8 @@ class Demon(object):
         self.shady_broker = None
         self.flag = None
 
+        self.old_id = id
+
 
 class Skill(object):
     def __init__(self, id, name, rank):
