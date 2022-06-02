@@ -1368,7 +1368,6 @@ def test_funs(fname):
         OK
         
     Untested functions don't add much value as of yet, and they're not even that hard.
-    Next focus: ASM
     '''
     
     bytes = filenameToBytes(fname)
@@ -1407,41 +1406,4 @@ def test_funs(fname):
     #print "Total added instructions:",hex(len(proc_labels) * 2)
     piped_bytes = obj.toBytes()
     #bytesToFile(piped_bytes,"piped_scripts/f016check.bf")
-    bytesToFile(piped_bytes,"piped_scripts/f024.bf")
-
-#Used to write in new item descriptions. Needs a bf file with the item MSG file inserted into it. It's janky, but it kind of works.
-def new_item_msg_script(fname):
-    bytes = filenameToBytes(fname)
-    obj = parse_binary_script(bytes)
-    useless_item_descs = [0x21, 0x2f, 0x30, 0x31, 0x32, 0x33, 0x39, 0x3b, 0x3c, 0x3e, 0x3f, 0x4b, 0x4c, 0x4d, 0x4e, 0x51, 0x52, 0x54, 0x56, 0x58, 0x59, 0x5a, 0x5b, 0x5c, 0x5d, 0x5e, 0x5f]
-    useless_item_msgs = []
-    for i in useless_item_descs:
-        short_msg = message("a","item_"+hex(i))
-        obj.changeMessageByIndex(short_msg,i)
-    black_key_msg = message("^.^iThe key for the^nBlack Amala Temple.^nThe handle reads^ntetrakarn goes here.^n^0","item_91",False)
-    white_key_msg = message("^.^iThe key for the^nWhite Amala Temple.^nThe handle reads^nBOOOOOOOM!^n^0","item_92",False)
-    red_key_msg = message("^.^iThe key for the^nRed Amala Temple.^nThe handle reads^nCalifornia.^n^0","item_93",False)
-    apocalypse_msg = message("^.^iA stone that attracts^nthe 4 horsemen.^nNow with extra blight!^n^0","item_94",False)
-    goblet_msg = message("^.^iA mother skeleton's^nfavorite cup.^nHappy Mother's Day!^n^0","item_95",False)
-    eggplant_msg = message("^.^iThe missing piece for^na suspicious ritual.^nIt is very plump^nwith excellent girth.^n^0","item_96",False)
-    ikebukuro_msg = message("^.^iThe key to entering^nIkebukuro tunnel^nIt can dispell^nillusions, apparently.^n^0","item_97",False)
-    obj.changeMessageByIndex(black_key_msg,0x91)
-    obj.changeMessageByIndex(white_key_msg,0x92)
-    obj.changeMessageByIndex(red_key_msg,0x93)
-    obj.changeMessageByIndex(apocalypse_msg,0x94)
-    obj.changeMessageByIndex(goblet_msg,0x95)
-    obj.changeMessageByIndex(eggplant_msg,0x96)
-    obj.changeMessageByIndex(ikebukuro_msg,0x97)
-    #unused_key_items = [0x91, 0x92, 0x93, 0x94, 0x95, 0x96, 0x97, 0x98, 0x99, 0x9a, 0x9b, 0x9c, 0x9d, 0x9e, 0x9f]
-    newfile = open('piped_scripts/itemnames.bfasm','w')
-    newfile.write(obj.exportASM())
-    newfile.close()
-    piped_bytes = obj.toBytes()
-    print("Original len:",len(bytes),"New len:",len(piped_bytes))
-    bytesToFile(piped_bytes,"piped_scripts/items.bf")
-    
-
-#new_item_msg_script('scripts/f024.bf') #Any bf file with the item MSG file.
-#piped_bytes = obj.toBytes()
-#test_funs("piped_scripts/f016.bf")
-#test_funs("scripts/f024.bf")
+    #bytesToFile(piped_bytes,"piped_scripts/f024.bf")

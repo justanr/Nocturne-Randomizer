@@ -556,7 +556,8 @@ def patch_intro_skip(iso_file):
 '''
 
 def patch_special_fusions(rom):
-    rom.write(struct.pack('<18x'), 0x0022EB78)
+    #rom.write(struct.pack('<18x'), 0x0022EB78)
+    rom.write(struct.pack('hhhhhhhhh', 0, 0, 0x16a, 0, 0, 0x16b, 0, 0, 0x16c), 0x0022EB78) #Blacklist copied demons to blacklist their fusion
     rom.write(struct.pack('<192x'), 0x0022EBE0)
 
     # rom.seek(0x0022EB78)
