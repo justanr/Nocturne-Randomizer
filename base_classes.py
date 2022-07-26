@@ -239,6 +239,8 @@ class Skill(object):
         # 2 = Recruitment
         self.skill_type = 1
 
+        self.level = 1
+
     def __repr__(self):
         return self.name
 

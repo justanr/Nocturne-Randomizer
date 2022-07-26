@@ -164,7 +164,7 @@ def load_demon_skills(rom, skill_offset, level):
 def load_skills(rom):
     skill_data_path = os.path.join(DATA_PATH, 'skill_data.txt')
     skill_data = open(skill_data_path, 'r').read().strip()
-    pattern = re.compile(r"([\dABCDEF]{3}) ([\w\'\&\- ]+) (\d+) (\d+)")
+    pattern = re.compile(r"([\dABCDEF]{3}) ([\w\'\&\- ]+) (\d+) (\d+) (\d+)")
 
     skill_data = list(map(lambda s: re.search(pattern, s), skill_data.split('\n')))
 
@@ -174,9 +174,11 @@ def load_skills(rom):
         name = data[2]
         rank = int(data[3])
         skill_type = int(data[4])
+        skill_level = int(data[5])
 
         skill = Skill(skill_id, name, rank)
         skill.skill_type = skill_type
+        skill.level = skill_level
 
         all_skills[skill_id] = skill
 
@@ -556,8 +558,7 @@ def patch_intro_skip(iso_file):
 '''
 
 def patch_special_fusions(rom):
-    #rom.write(struct.pack('<18x'), 0x0022EB78)
-    rom.write(struct.pack('hhhhhhhhh', 0, 0, 0x16a, 0, 0, 0x16b, 0, 0, 0x16c), 0x0022EB78) #Blacklist copied demons to blacklist their fusion
+    rom.write(struct.pack('<18x'), 0x0022EB78)
     rom.write(struct.pack('<192x'), 0x0022EBE0)
 
     # rom.seek(0x0022EB78)
@@ -671,12 +672,17 @@ def write_all(rando, world):
     fix_nihilo_summons(rom, world.demon_map)
     # fix the magatama drop on the fused versions of specter 1
     for b in world.battles.values():
-        if b.offset == world.get_check("Specter 1").offset:
+        if b.offset == world.get_boss("Specter 1").check.offset:
             if b.reward:
+                print("found a specter")
                 fix_specter_1_reward(rom, b.reward)
         elif b.offset == world.get_check("Futomimi").offset:
             if b.reward:
                 fix_angel_reward(rom, b.reward)
+    #if world.get_boss("Specter 1").battle.reward:
+    #    print("found a specter")
+    #    fix_specter_1_reward(rom, world.get_boss("Specter 1").battle.reward) #fix specter 1 reward
+
 
     # replace the DUMMY personality on certain demons
     patch_fix_dummy_convo(rom)

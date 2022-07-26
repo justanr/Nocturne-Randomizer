@@ -77,7 +77,8 @@ unused_desc = "This is an unused function. If you see this in used code then tha
 comm4 = func(4,"UNUSED_4",desc=unused_desc)
 comm5 = func(5,"UNUSED_5",desc=unused_desc)
 comm6 = func(6,"REMOVE_END_STONE",desc="Removes one of the 3 endgame stones.",params=[endstoneParam])
-flag_long_desc = "\tThe flags are used for keeping track of triggers.\n\tThey can be important for story progression, for very minor things like short one-time message displays, or even used for the fusability of story demons like the fiends."
+flag_long_desc = "\tThe flags are used for keeping track of triggers.\n\tThey can be important for story progression, for very minor things like short one-time message displays, or even used for the fusability of story demons like the 
+s."
 comm7 = func(7,"BIT_CHK","bool","Returns flag of the given index", [flagParam], long_desc=flag_long_desc +"\n\tIt's more common to check if the bit is on. The way it's checked if its off is: 'PUSHIS 0, PUSHIS ID, COMM 7, PUSHREG, EQ' - 3 extra instructions that could've been simplified with a NEGATE instruction.")
 comm8 = func(8,"BIT_ON",desc="Turns on flag of the given index", params=[flagParam], long_desc=flag_long_desc)
 comm9 = func(9,"BIT_OFF",desc="Turns off flag of the given index", params=[flagParam], long_desc=flag_long_desc)

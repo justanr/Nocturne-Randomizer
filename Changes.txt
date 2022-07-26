@@ -59,3 +59,10 @@ version 0.2.3
 for whichever demon replaces them
 * Added new unique skills: Fire of Sinai, Death Flies, Icy Death, Foul Havoc, Tentacle, Bael's Bane,
 and Phase Shift
+
+version 0.2.4
+*Specter 1's reward fixed
+*Girimekhala check now gives the correct amount of exp
+*More settings added to config file. They can now be changed outside of the program, 
+but not much else is done with them yet
+*Flag 'e' added for enemy skill scaling, and all skills are now assigned a level

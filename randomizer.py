@@ -8,6 +8,7 @@ import sys
 import os
 from collections import defaultdict
 from io import BytesIO
+from configparser import ConfigParser
 
 import nocturne
 import logic
@@ -45,6 +46,7 @@ class Randomizer:
         self.config_vanilla_tok = False                 # Do not randomize ToK bosses (Ahriman, Noah, Thor 2, Baal Avatar, Kagutsuchi)
         self.config_random_music = False                # boss music is randomized
         self.config_check_based_music = False           # boss music is based on location rather than boss demon
+        self.config_enemy_skill_scaling = False         # balances what skills enemy demons have to their level
         self.config_export_to_hostfs = False            # Build to folder with HostFS patch instead of an .iso
 
     def init_iso_data(self):
@@ -213,7 +215,7 @@ class Randomizer:
     # ban victory cry and son's oath from showing up
     BANNED_SKILLS = [0x15C, 0x169, 0x165]
 
-    def randomize_skills(self, new_demon, force_skills=None):
+    def randomize_skills(self, new_demon, force_skills=None, skill_scaling = False):
         new_skills = []
         new_battle_skills = []
         is_pixie = bool(new_demon.name == "Pixie")
@@ -268,13 +270,21 @@ class Randomizer:
         # randomly select unique skills and add it to the list + shuffle
         chosen_skills += random.sample(unique_pool, num_of_unique)
         random.shuffle(chosen_skills)
+        rejected_skills = [] #skills that are initially passed over for being too high level
+        weak_skills = [] #Skills that are initially passed over for being much lower level
 
         for i in range(total_skills):
             chosen_skill = chosen_skills.pop()
 
-            # add skills that can be used in battle to battle_skills
+            # add skills that can be used in battle to battle_skills, if they are of the appropriate level
             if chosen_skill.skill_type == 1 and len(new_battle_skills) < 8 and chosen_skill.name not in ['Analyze', 'Trafuri', 'Beckon Call', 'Riberama', 'Lightoma', 'Liftoma', 'Estoma']:
-                new_battle_skills.append(chosen_skill.ind)
+                if (chosen_skill.level <= new_demon.level and chosen_skill.level >= new_demon.level - 20) or not skill_scaling:
+                    if skill_scaling or (chosen_skill.ind not in [0x104, 0x11f]): #remove gods bow and death flies if skill scaling is disabled
+                        new_battle_skills.append(chosen_skill.ind)
+                elif chosen_skill.level > new_demon.level:
+                    rejected_skills.append(chosen_skill)
+                else:
+                    weak_skills.append(chosen_skill)
 
             if len(new_skills) >= starting_skills:
                 if is_pixie or level == 0:
@@ -288,6 +298,23 @@ class Randomizer:
                 'event': 1,
             }
             new_skills.append(skill)
+            
+        if len(rejected_skills) > 0: #Attempt to give at least 3 skills to demons, provided they have skills that aren't too much above their level
+            rejected_skills.sort(key = lambda x: x.level)
+            while len(new_battle_skills) < 3 and len(rejected_skills) > 0:
+                skill_count = len(new_battle_skills)
+                next_skill = rejected_skills.pop(0)
+                if skill_count == 0 or next_skill.level <= new_demon.level + (30 - skill_count * 10):
+                    new_battle_skills.append(next_skill.ind)
+                else:
+                    break
+
+        if len(weak_skills) > 0: #Demon AI can only know 5 skills, so prioritize strong skills for high level demons
+            weak_skills.sort(key = lambda x: x.level, reverse = True)
+            while len(new_battle_skills) < 5 and len(weak_skills) > 0:
+                skill_count = len(new_battle_skills)
+                next_skill = weak_skills.pop(0)
+                new_battle_skills.append(next_skill.ind)
 
         return [new_skills, new_battle_skills]
 
@@ -363,7 +390,7 @@ class Randomizer:
         return new_demon
 
 
-    def randomize_demons(self, demon_map, generated_demons, exp_mod=1):
+    def randomize_demons(self, demon_map, generated_demons, exp_mod=1, enemy_skill_scaling = False):
         new_demons = []
         # buffs/debuffs to give to base demons
         skills_to_distribute = [52, 53, 54, 57, 64, 65, 66, 67, 77]
@@ -417,9 +444,9 @@ class Randomizer:
                 new_demon.skills, new_demon.battle_skills = self.randomize_skills(new_demon, [73, 74])
             elif new_demon.base_demon and len(skills_to_distribute) > 0:
                 skill = [skills_to_distribute.pop()]
-                new_demon.skills, new_demon.battle_skills = self.randomize_skills(new_demon, skill)
+                new_demon.skills, new_demon.battle_skills = self.randomize_skills(new_demon, skill, enemy_skill_scaling)
             else:
-                new_demon.skills, new_demon.battle_skills = self.randomize_skills(new_demon)
+                new_demon.skills, new_demon.battle_skills = self.randomize_skills(new_demon, None, enemy_skill_scaling)
             new_demon.old_id = old_demon.ind #keep track of who is replaced
             new_demons.append(new_demon)
 
@@ -529,8 +556,9 @@ class Randomizer:
                 # if the new boss is replacing the Sisters or Kaiwans triple hp and mp. Also Ahriman, Noah, Kagutsuchi, Albion, and Archangels
                 if old_boss_demon.name in ["Atropos 2 (Boss)", "Kaiwan (Boss)", "Ahriman 1st Form (Boss)", "Noah 1st Form (Boss)", "Raphael (Boss)", "Kagutsuchi 1st Form (Boss)", "Albion (Boss)"]:
                     new_hp *= 3
-                    new_exp *= 3
-                    new_macca *= 3
+                    if old_boss_demon.name in ["Atropos 2 (Boss)", "Kaiwan (Boss)", "Raphael (Boss)", "Albion (Boss)"]:
+                        new_exp *= 3
+                        new_macca *= 3
                     if old_boss_demon.name == "Kaiwan (Boss)":
                         new_mp *= 3
                 # if the new boss is replacing a Specter, do 6 times hp and mp 
@@ -541,6 +569,10 @@ class Randomizer:
                     new_mp *= 6
                     #if old_boss_demon.name == "Specter 2 (Boss)":
                     #    new_mp *= 10
+                # if the new boss is replacing gary, compensate for Sakahagi's exp and macca
+                if old_boss_demon.name == "Girimehkala (Boss)":
+                    new_exp *= 7
+                    new_macca *= 10
                 # if the new boss is the Sisters or Kaiwans divide the hp pool evenly between the 3
                 if new_boss_demon.name in ["Atropos 2 (Boss)", "Kaiwan (Boss)", "Raphael (Boss)"]:
                     new_hp = round(new_hp / 3)
@@ -714,22 +746,46 @@ class Randomizer:
             print("WARNING: This is a beta build and things may not work as intended.\nContact PinkPajamas or NMarkro if you encounter any bugs\n")
 
         if os.path.exists('config.ini'):
-            with open('config.ini', 'r') as f:
-                config_iso_path = f.readline().strip()
-                config_flags = f.readline().strip()
-                if os.path.exists(config_iso_path):
-                    print('Config file found, previous ISO file path: {}'.format(config_iso_path))
-                    response = input('Use previous ISO file? y/n\n> ').strip()
-                    print()
-                    if response[:1].lower() == 'y':
-                        self.input_iso_path = config_iso_path
+            configur = ConfigParser()
+            configur.read('config.ini')
+            config_iso_path = configur.get('Files', 'Path').strip()
+            config_flags = configur.get('Settings', 'Flags').strip()
+            if os.path.exists(config_iso_path):
+                print('Config file found, previous ISO file path: {}'.format(config_iso_path))
+                response = input('Use previous ISO file? y/n\n> ').strip()
+                print()
+                if response[:1].lower() == 'y':
+                    self.input_iso_path = config_iso_path
 
-                if config_flags:
-                    print('Previous flags: {}'.format(config_flags))
-                    response = input('Use previous flags? y/n\n> ').strip()
-                    print()
-                    if response[:1].lower() == 'y':
-                        self.flags = config_flags
+
+            config_flags = ''
+            if configur.get('Settings', 'MagicPierce') == 'true':
+                config_flags = config_flags + 'p'
+            if configur.get('Settings', 'RemoveHardmodePrices') == 'true':
+                config_flags = config_flags + 'h'
+            if configur.get('Settings', 'FixInheritance') == 'true':
+                config_flags = config_flags + 'i'
+            if configur.get('Settings', 'StockHealing') == 'true':
+                config_flags = config_flags + 'h'
+            if configur.get('Settings', 'VisibleSkills') == 'true':
+                config_flags = config_flags + 'v'
+            if configur.get('Settings', 'ExpModifier') == 'true':
+                config_flags = config_flags + 'd'
+            if configur.get('Settings', 'VanillaTok') == 'true':
+                config_flags = config_flags + 't'
+            if configur.get('Settings', 'RandomMusic') == 'true':
+                config_flags = config_flags + 'm'
+            if configur.get('Settings', 'CheckBasedMusic') == 'true':
+                config_flags = config_flags + 'l'
+            if configur.get('Settings', 'EnemySkillScaling') == 'true':
+                config_flags = config_flags + 'e'
+
+            if config_flags:
+                print('Previous flags: {}'.format(config_flags))
+                response = input('Use previous flags? y/n\n> ').strip()
+                print()
+                if response[:1].lower() == 'y':
+                    self.flags = config_flags
 
 
         if self.input_iso_path == None:
@@ -758,6 +814,8 @@ class Randomizer:
             print("File not found, check input path")
             return
 
+        configur.set('Files', 'Path', self.input_iso_path)
+
         if self.text_seed is None:
             self.text_seed = input("Please input your desired seed value (blank for random seed):\n> ").strip()
             print()
@@ -777,7 +835,8 @@ v   Make learnable skills always visible.
 d   Double EXP gains.
 t   keep tower of Kagutsuchi bosses vanilla
 m   randomize boss music
-l   location-based boss music (overrides random music)'''
+l   location-based boss music (overrides random music)
+e   balance skills of enemies based on level (doesn't affect your demons)'''
 
         if self.flags == None:
             print(flags_text)
@@ -786,9 +845,7 @@ l   location-based boss music (overrides random music)'''
             if self.flags == '':
                 self.flags = string.ascii_lowercase
 
-        with open('config.ini', 'w') as f:
-            f.write(self.input_iso_path + "\n")
-            f.write(self.flags)
+        configur.set('Settings', 'Flags', self.flags)
 
         export_text = '''Export formats:
 1   ISO file *Recommended for most users*
@@ -798,38 +855,77 @@ l   location-based boss music (overrides random music)'''
         print()
         if response[:1] == '1':
             self.config_export_to_hostfs = False
+            configur.set('Files', 'ExportToHostfs', 'false')
         elif response[:1] == '2':
             self.config_export_to_hostfs = True
+            configur.set('Files', 'ExportToHostfs', 'true')
         else:
             print("Invalid input, defaulting to ISO file export")
             self.config_export_to_hostfs = False
+            configur.set('Files', 'ExportToHostfs', 'false')
 
         if 'p' in self.flags:
             self.config_magic_pierce = True
+            configur.set('Settings', 'MagicPierce', 'true')
+        else:
+            configur.set('Settings', 'MagicPierce', 'false')
 
         if 's' in self.flags:
             self.config_remove_hardmode_prices = True
+            configur.set('Settings', 'RemoveHardmodePrices', 'true')
+        else:
+            configur.set('Settings', 'RemoveHardmodePrices', 'false')
 
         if 'h' in self.flags:
             self.config_stock_healing = True
+            configur.set('Settings', 'StockHealing', 'true')
+        else:
+            configur.set('Settings', 'StockHealing', 'false')
 
         if 'i' in self.flags:
             self.config_fix_inheritance = True
+            configur.set('Settings', 'FixInheritance', 'true')
+        else:
+            configur.set('Settings', 'FixInheritance', 'false')
 
         if 'v' in self.flags:
             self.config_visible_skills = True
+            configur.set('Settings', 'VisibleSkills', 'true')
+        else:
+            configur.set('Settings', 'VisibleSkills', 'false')
 
         if 'd' in self.flags:
             self.config_exp_modifier = 2
+            configur.set('Settings', 'ExpModifier', 'true')
+        else:
+            configur.set('Settings', 'ExpModifier', 'false')
 
         if 't' in self.flags:
             self.config_vanilla_tok = True
+            configur.set('Settings', 'VanillaTok', 'true')
+        else:
+            configur.set('Settings', 'VanillaTok', 'false')
 
         if 'm' in self.flags:
             self.config_random_music = True
+            configur.set('Settings', 'RandomMusic', 'true')
+        else:
+            configur.set('Settings', 'RandomMusic', 'false')
 
         if 'l' in self.flags:
             self.config_check_based_music = True
+            configur.set('Settings', 'CheckBasedMusic', 'true')
+        else:
+            configur.set('Settings', 'CheckBasedMusic', 'false')
+
+        if 'e' in self.flags:
+            self.config_enemy_skill_scaling = True
+            configur.set('Settings', 'EnemySkillScaling', 'true')
+        else:
+            configur.set('Settings', 'EnemySkillScaling', 'false')
+
+        with open('config.ini', 'w') as configfile:
+            configur.write(configfile)
 
         if not TEST:
             if os.path.exists(self.input_iso_path + '.md5'):
@@ -881,7 +977,7 @@ l   location-based boss music (overrides random music)'''
         # generate_demon_permutation disregards demon names for most races for better randomization (non-element/mitama)
         demon_map = self.generate_demon_permutation(demon_generator)
         # randomize and rebalance all demon stats
-        new_demons = self.randomize_demons(demon_map, demon_generator.demons, exp_mod=self.config_exp_modifier)
+        new_demons = self.randomize_demons(demon_map, demon_generator.demons, exp_mod=self.config_exp_modifier, enemy_skill_scaling = self.config_enemy_skill_scaling)
 
         print('randomizing battles')
         # mutate all the non-boss demons using demon_map 
