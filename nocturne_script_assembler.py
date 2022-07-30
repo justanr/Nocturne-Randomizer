@@ -1,8 +1,8 @@
 #Nocturne script file (*.bf) assembler and disassembler
 #In a disassembled state, there is an API in the bf_script class that lets you modify the script programatically.
-#Currently the API is not implemented and this entire piece is a messy WIP, but is useful to see to be able to understand how to interface with bf files.
 '''
 Escape codes: 
+    ^s - Start of text F2 08 FF FF F2 07 07 FF. You don't need to write this
 	^p - Plain text F2 02 01 FF
 	^r - Red text F2 02 02 FF
 	^b - Blue text F2 02 03 FF
@@ -15,7 +15,22 @@ Escape codes:
     ^. - After ^t between each selection
     ^i - Used for item descriptions
     ^0 - 0x00
+    ^F - MC First name
+    ^L - MC Last name
+    ^Y - Yuko Takao's First name
+    ^T - Yuko Takao's Last name
+    ^I - Isamu Nitta's First name
+    ^N - Isamu Nitta's Last name
+    ^C - Chiaki Hayasaka's First name
+    ^H - Chiaki Hayasaka's Last name
+    ^1 (up to 6) - Param number [used for treasure name, treasure count, elevator floors, choices, etc.]
+    ^! - Unknown (in unused text)
+    ^@ - Unknown (in unused text)
+    ^: - Mid-message start (in unused text?)
+    ^= - Parameters in selects?
+    ^S - Alternate to ^s. Don't know why.
 '''
+
 import math
 import copy
 
@@ -504,6 +519,7 @@ class bf_script:
         #.sel or .msg space, [index], space, Message label, space, name or -1 or blank, colon. Perhaps have a way to ignore auto-spacing? Seems kind of bad.
         #String with escape codes. Message MUST end with ^m.
         ret_str += ".messages\n\n"
+        
         for i, msg in enumerate(self.sections[MESSAGES].messages):
             if msg.is_decision:
                 ret_str+="Sel "
@@ -514,7 +530,26 @@ class bf_script:
                 ret_str+="NO_NAME"
             else:
                 if msg.name_id < len(self.sections[MESSAGES].names.names):
-                    ret_str+=self.sections[MESSAGES].names.names[msg.name_id]
+                    name_str = self.sections[MESSAGES].names.names[msg.name_id]
+                    if len(name_str) == 4 and ord(name_str[0]) == 0xf2: #Special name code. Handles Yuko, Isamu and Chiaki
+                        if ord(name_str[3]) != 0xff:#
+                            print("Warning: Name code (for a text box) assertion failed (expected 255). Found",ord(name_str[3]))
+                        code1 = ord(name_str[1])
+                        code2 = ord(name_str[2])
+                        if code1 == 0x0c and code2 == 0x02: #Yuko first name
+                            ret_str+="^Y"
+                        elif code1 == 0x0b and code2 == 0x02: #Yuko Takao's last name
+                            ret_str+="^T"
+                        elif code1 == 0x0c and code2 == 0x03: #Isamu first name
+                            ret_str+="^I"
+                        elif code1 == 0x0b and code2 == 0x03: #Isamu last name
+                            ret_str+="^N"
+                        elif code1 == 0x0c and code2 == 0x04: #Chiaki first name
+                            ret_str+="^C"
+                        elif code1 == 0x0b and code2 == 0x04: #Chiaki last name
+                            ret_str+="^H"
+                    else:
+                        ret_str+=self.sections[MESSAGES].names.names[msg.name_id]
                 else:
                     ret_str+="OoB Name"
             ret_str+="\n\t"
@@ -523,6 +558,7 @@ class bf_script:
                 #msg.space_text()
             ret_str+=msg.str
             ret_str+="\n"
+        
         return ret_str
     def importASM(self, asmFilename):
         #first pass of .instructions used to create proc_labels, br_labels, and pushstrs
@@ -711,19 +747,40 @@ class message_pointer:
 
 
 #escape codes
-et = [0x2e, 0x00] #Used to distinguish selections.
-edot = [0xF2, 0x08, 0xFF, 0xFF]
-ei = [0xF2, 0x06, 0x02, 0xFF]
-ep = [0xF2, 0x02, 0x01, 0xFF]
-er = [0xF2, 0x02, 0x02, 0xFF]
-eb = [0xF2, 0x02, 0x03, 0xFF]
-ey = [0xF2, 0x02, 0x04, 0xFF]
-eg = [0xF2, 0x02, 0x05, 0xFF]
-en = [0x0A]
-ex = [0x0A, 0xF1, 0x04, 0xF2, 0x08, 0xFF, 0xFF]
-exx = [0xF1, 0x04, 0xF2, 0x08, 0xFF, 0xFF] #alternate of ex
-em = [0x0A, 0xF1, 0x04, 0x00]
-es = [0xF2, 0x08, 0xFF, 0xFF, 0xF2, 0x07, 0x07, 0xFF] #bytes at the start. Not used as an escape but automatically added in.
+e_t_select = [0x2e, 0x00] #Used to distinguish selections. ^t
+e_dot_endselect = [0xF2, 0x08, 0xFF, 0xFF] #Used to end selections. ^.
+e_item = [0xF2, 0x06, 0x02, 0xFF] #Item descriptions ^i
+e_plain = [0xF2, 0x02, 0x01, 0xFF] #Cancels colored text ^p
+e_red = [0xF2, 0x02, 0x02, 0xFF] #Red color ^r
+e_blue = [0xF2, 0x02, 0x03, 0xFF] #Blue color ^b
+e_yellow = [0xF2, 0x02, 0x04, 0xFF] #Yellow color ^y
+e_green = [0xF2, 0x02, 0x05, 0xFF] #Green color ^g
+e_param1 = [0xF2, 0x03, 0x01, 0xFF] #^1
+e_param2 = [0xF2, 0x03, 0x02, 0xFF] #^2
+e_param3 = [0xF2, 0x03, 0x03, 0xFF] #^3
+e_param4 = [0xF2, 0x03, 0x04, 0xFF] #^4
+e_param5 = [0xF2, 0x03, 0x05, 0xFF] #^5
+e_param6 = [0xF2, 0x03, 0x06, 0xFF] #^6
+e_start = [0xF2, 0x08, 0xFF, 0xFF, 0xF2, 0x07, 0x07, 0xFF] #bytes at the start. Not used as an escape but automatically added in. ^s
+e_start2 = [0xF2, 0x08, 0xFF, 0xFF, 0xF2, 0x07, 0x02, 0xFF] #alternate form of start. Don't know why ^S
+e_mid_start = [0xF2, 0x07, 0x07, 0xFF] #Start bytes in the middle of a message is in unused / debug text. ^:
+e_mc_first = [0xF2, 0x0c, 0x01, 0xFF] #MC first name. ^F
+e_mc_last = [0xF2, 0x0b, 0x01, 0xFF] #MC last name. ^L
+#I don't know where I can find MC nickname in text, if it even exists
+e_yuko_first = [0xf2, 0x0c, 0x02, 0xff] #Yuko first name ^Y
+e_yuko_last = [0xf2, 0x0b, 0x02, 0xff] #Yuko last name ^T
+e_isamu_first = [0xf2, 0x0c, 0x03, 0xff] #Isamu first name ^I
+e_isamu_last = [0xf2, 0x0b, 0x03, 0xff] #Isamu last name ^N
+e_chiaki_first = [0xf2, 0x0c, 0x04, 0xff] #Chiaki first name ^C
+e_chiaki_last = [0xf2, 0x0b, 0x04, 0xff] #Chiaki last name ^H
+e_newline = [0x0A] #^n
+e_boxend1 = [0x0A, 0xF1, 0x04, 0xF2, 0x08, 0xFF, 0xFF] #Ends the box (not message) ^x
+e_boxend2 = [0xF1, 0x04, 0xF2, 0x08, 0xFF, 0xFF] #alternate of boxend without ^n
+e_qboxend = [0xF1, 0x04] #^z. Question box end. I'm not sure exactly how these work
+e_messend = [0x0A, 0xF1, 0x04, 0x00] #Ends the message ^m
+e_u1 = [0xF1, 0x12] #unknown modifier in unused text. ^!
+e_u2 = [0xF1, 0x10] #^@
+e_select_param = [0x80, 0xea, 0x00] #^= . This shows up in elevator selects.
 class message:
     def __init__(self, str = "", label_str = "", auto_space=True):
         self.str = str #message in text as str
@@ -757,7 +814,7 @@ class message:
             return -1
         in_escape = False
         byte_count = 8
-        bytes_by_int = copy.deepcopy(es)
+        bytes_by_int = copy.deepcopy(e_start)
         if self.is_decision:
             bytes_by_int = bytes_by_int[:4]
             byte_count-=4
@@ -765,47 +822,105 @@ class message:
         if givenstr != "":
             self.str = givenstr
             self.text_formed = True
+        #^s and ^S might not work properly
         for c in self.str: #self
             if in_escape:
                 #e* are escape codes in bytes
                 if c == "p":
-                    bytes_by_int.extend(ep)
-                    byte_count +=len(ep)
+                    bytes_by_int.extend(e_plain)
+                    byte_count +=len(e_plain)
                 elif c == "r":
-                    bytes_by_int.extend(er)
-                    byte_count +=len(er)
+                    bytes_by_int.extend(e_red)
+                    byte_count +=len(e_red)
                 elif c == "b":
-                    bytes_by_int.extend(eb)
-                    byte_count +=len(eb)
+                    bytes_by_int.extend(e_blue)
+                    byte_count +=len(e_blue)
                 elif c == "y":
-                    bytes_by_int.extend(ey)
-                    byte_count +=len(ey)
+                    bytes_by_int.extend(e_yellow)
+                    byte_count +=len(e_yellow)
                 elif c == "g":
-                    bytes_by_int.extend(eg)
-                    byte_count +=len(eg)
+                    bytes_by_int.extend(e_green)
+                    byte_count +=len(e_green)
                 elif c == "n":
-                    bytes_by_int.extend(en)
-                    byte_count +=len(en)
+                    bytes_by_int.extend(e_newline)
+                    byte_count +=len(e_newline)
                 elif c == "x":
-                    bytes_by_int.extend(ex)
-                    byte_count +=len(ex)
+                    bytes_by_int.extend(e_boxend1)
+                    byte_count +=len(e_boxend1)
                     self.relative_pointers.append(byte_count)
                 elif c == "m":
-                    bytes_by_int.extend(em)
-                    byte_count +=len(em)
+                    bytes_by_int.extend(e_messend)
+                    byte_count +=len(e_messend)
                 elif c == "t":
-                    bytes_by_int.extend(et)
-                    byte_count +=len(et)
+                    bytes_by_int.extend(e_t_select)
+                    byte_count +=len(e_t_select)
                 elif c == ".":
-                    bytes_by_int.extend(edot)
-                    byte_count +=len(edot)
+                    bytes_by_int.extend(e_dot_endselect)
+                    byte_count +=len(e_dot_endselect)
                     self.relative_pointers.append(byte_count)
                 elif c == 'i':
-                    bytes_by_int.extend(ei)
-                    byte_count +=len(ei)
+                    bytes_by_int.extend(e_item)
+                    byte_count +=len(e_item)
+                elif c == 'z':
+                    bytes_by_int.extend(e_qboxend)
+                    byte_count +=len(e_qboxend)
+                elif c == 'F':
+                    bytes_by_int.extend(e_mc_first)
+                    byte_count +=len(e_mc_first)
+                elif c == 'L':
+                    bytes_by_int.extend(e_mc_last)
+                    byte_count +=len(e_mc_last)
+                elif c == 'Y':
+                    bytes_by_int.extend(e_yuko_first)
+                    byte_count +=len(e_yuko_first)
+                elif c == 'T':
+                    bytes_by_int.extend(e_yuko_last)
+                    byte_count +=len(e_yuko_last)
+                elif c == 'I':
+                    bytes_by_int.extend(e_isamu_first)
+                    byte_count +=len(e_isamu_first)
+                elif c == 'N':
+                    bytes_by_int.extend(e_isamu_last)
+                    byte_count +=len(e_isamu_last)
+                elif c == 'C':
+                    bytes_by_int.extend(e_chiaki_first)
+                    byte_count +=len(e_chiaki_first)
+                elif c == 'H':
+                    bytes_by_int.extend(e_chiaki_last)
+                    byte_count +=len(e_chiaki_last)
                 elif c == '0':
                     bytes_by_int.append(0)
                     byte_count +=1
+                elif c == '!':
+                    bytes_by_int.extend(e_u1)
+                    byte_count +=len(e_u1)
+                elif c == '@':
+                    bytes_by_int.extend(e_u2)
+                    byte_count +=len(e_u2)
+                elif c == '1':
+                    bytes_by_int.extend(e_param1)
+                    byte_count +=len(e_param1)
+                elif c == '2':
+                    bytes_by_int.extend(e_param2)
+                    byte_count +=len(e_param2)
+                elif c == '3':
+                    bytes_by_int.extend(e_param3)
+                    byte_count +=len(e_param3)
+                elif c == '4':
+                    bytes_by_int.extend(e_param4)
+                    byte_count +=len(e_param4)
+                elif c == '5':
+                    bytes_by_int.extend(e_param5)
+                    byte_count +=len(e_param5)
+                elif c == '6':
+                    bytes_by_int.extend(e_param6)
+                    byte_count +=len(e_param6)
+                elif c == ':':
+                    bytes_by_int.extend(e_mid_start)
+                    byte_count +=len(e_mid_start)
+                elif c == '=':
+                    bytes_by_int.extend(e_select_param)
+                    byte_count +=len(e_select_param)
                 in_escape=False
             elif c == "^":
                 in_escape = True
@@ -833,33 +948,76 @@ class message:
         bytelen = len(self.bytes)
         i=0
         m_str = ""
-        if self.bytes[:8] == bytearray(es):
+        if self.bytes[:8] == bytearray(e_start):
             i=8
         loopcheck = -1
+        warning_flag = False
         while i<bytelen:
             if loopcheck == i:
                 i+=1
             loopcheck=i
+            #Check for escape code characters. We use '^' because it doesn't display properly in game.
             if self.bytes[i] == 0xF2:
                 if i+3 < bytelen:
                     bc = self.bytes[i:i+4] #byte check
-                    if bc == bytearray(ep):
+                    if bc == bytearray(e_plain):
                         m_str+="^p"
-                    elif bc == bytearray(er):
+                    elif bc == bytearray(e_red):
                         m_str+="^r"
-                    elif bc == bytearray(eb):
+                    elif bc == bytearray(e_blue):
                         m_str+="^b"
-                    elif bc == bytearray(ey):
+                    elif bc == bytearray(e_yellow):
                         m_str+="^y"
-                    elif bc == bytearray(eg):
+                    elif bc == bytearray(e_green):
                         m_str+="^g"
-                    elif bc == bytearray(edot):
-                        m_str+="^."
-                    elif bc == bytearray(ei):
+                    elif bc == bytearray(e_dot_endselect):
+                        if i+7 < bytelen and self.bytes[i:i+8] == bytearray(e_start):
+                            m_str+="^s"
+                            i+=4 #another i+=4 happens later
+                        elif i+7 < bytelen and self.bytes[i:i+8] == bytearray(e_start2):
+                            m_str+="^S"
+                            i+=4
+                        else:
+                            m_str+="^."
+                    elif bc == bytearray(e_item):
                         m_str+="^i"
+                    elif bc == bytearray(e_mc_first):
+                        m_str+="^F"
+                    elif bc == bytearray(e_mc_last):
+                        m_str+="^L"
+                    elif bc == bytearray(e_yuko_first):
+                        m_str+="^Y"
+                    elif bc == bytearray(e_yuko_last):
+                        m_str+="^T"
+                    elif bc == bytearray(e_isamu_first):
+                        m_str+="^I"
+                    elif bc == bytearray(e_isamu_last):
+                        m_str+="^N"
+                    elif bc == bytearray(e_chiaki_first):
+                        m_str+="^C"
+                    elif bc == bytearray(e_chiaki_last):
+                        m_str+="^H"
+                    elif bc == bytearray(e_param1):
+                        m_str+="^1"
+                    elif bc == bytearray(e_param2):
+                        m_str+="^2"
+                    elif bc == bytearray(e_param3):
+                        m_str+="^3"
+                    elif bc == bytearray(e_param4):
+                        m_str+="^4"
+                    elif bc == bytearray(e_param5):
+                        m_str+="^5"
+                    elif bc == bytearray(e_param6):
+                        m_str+="^6"
+                    elif bc == bytearray(e_mid_start):
+                        m_str+="^:"
                     else:
-                        print("Warning: In message.bytes_to_str(). Unknown set of bytes:",bc)
-                        m_str+="^u("+str(bc)+")"
+                        if warning_flag == True:
+                            print("Further warnings suppressed.")
+                        else:
+                            print("Warning: In message.bytes_to_str(). Unknown set of bytes from F2:",bc)
+                            m_str+="^u("+str(bc)+")"
+                            warning_flag = True
                 else:
                     print("ERROR: In message.bytes_to_str(). Invalid set of bytes")
                     return -1
@@ -867,13 +1025,13 @@ class message:
             elif self.bytes[i] == 0x0A:
                 checkdone = False
                 if i+5 < bytelen: #check ^x first
-                    if self.bytes[i:i+6] == bytearray(ex):
+                    if self.bytes[i:i+6] == bytearray(e_boxend1):
                         m_str+="^x"
                         i+=6
                         checkdone = True
                         
                 if i+3 < bytelen and not checkdone:
-                    if self.bytes[i:i+4] == bytearray(em):
+                    if self.bytes[i:i+4] == bytearray(e_messend):
                         m_str+="^m"
                         i+=4
                         checkdone = True
@@ -881,16 +1039,38 @@ class message:
                     m_str+="^n"
                     i+=1
             elif self.bytes[i] == 0xf1:
-                if i+4 < bytelen:
-                    if self.bytes[i:i+5] == bytearray(exx):
-                        m_str+="^x"
-                        i+=5
+                if i+5 < bytelen and self.bytes[i:i+6] == bytearray(e_boxend2):
+                    m_str+="^x"
+                    i+=6
+                elif i+1 < bytelen:
+                    if self.bytes[i:i+2] == bytearray(e_qboxend):
+                        m_str+="^z"
+                    elif self.bytes[i:i+2] == bytearray(e_u1):
+                        m_str+="^!"
+                    elif self.bytes[i:i+2] == bytearray(e_u2):
+                        m_str+="^@"
                     else:
-                        print("Warning: In message.bytes_to_str(). Unknown bytes from 0xF1")
-                        m_str+="^u(f1)"
-                        i+=1
+                        print("Warning: In message.bytes_to_str(). Unknown bytes from 0xF1: ",self.bytes[i+1:i+6])
+                        m_str+="^u"
+                    i+=2
+                else:
+                    print("Warning: Message ends with 0xf1")
+                    i+=1
             elif self.bytes[i] == 0:
                 i+=1
+            elif self.bytes[i] == 0xff:
+                if warning_flag == False:
+                    print("Warning: 0xff is uncodeable.")
+                    warning_flag = True
+                    print("Debug:",self.bytes)
+                m_str+="^u(ff)"
+                i+=1
+            elif self.bytes[i] == 0x80:
+                if i+2 < bytelen and self.bytes[i:i+3] == bytearray(e_select_param):
+                    m_str+="^:"
+                    i+=3
+                else:
+                    print("Warning: In message.bytes_to_str(). Unknown bytes from 0x80")
             else:
                 m_str+=chr(self.bytes[i])
                 i+=1
@@ -963,7 +1143,7 @@ class message:
                 elif ch == "^" and esc_ch == "m":
                     break #End of message. ^m is automatically added at the end.
                 else:
-                    print("WARNING: Unknown escape character: '",esc_ch,"'. Ignoring.")
+                    print("WARNING: Ignoring text spacing of '",esc_ch,"'")
             elif ch not in kerning:
                 print("WARNING: Kerning of ",ch," is unknown. Removing character")
             elif ch == " ":
@@ -1367,7 +1547,7 @@ def test_funs(fname):
     def getProcInstructionsLabelsByIndex(self, proc_index):
         OK
         
-    Untested functions don't add much value as of yet, and they're not even that hard.
+    Untested functions are currently unused, but were easy to write so I wrote them anyway.
     '''
     
     bytes = filenameToBytes(fname)
