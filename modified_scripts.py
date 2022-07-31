@@ -69,7 +69,7 @@ Dante 2: ???
 Beelzebub: ???
 Metatron: ???
 '''
-
+SCRIPT_DEBUG = False
 #instruction creation shortcut
 def inst(opcode_str,operand=0):
     return assembler.instruction(assembler.OPCODES[opcode_str],operand)
@@ -105,11 +105,14 @@ class Script_Modifier:
                     print ("Warning: In get_reward_str(). No reward string found for flag",hex(flag_reward.flag_id))
         return reward_str
     def get_flag_reward_insts(self, check_name, world):
-        #ret_insts = []
-        ret_insts = [inst("PUSHIS",1),inst("COMM",0xe)] #for testing purposes
+        ret_insts = []
+        #ret_insts = [inst("PUSHIS",1),inst("COMM",0xe)] #for testing purposes
+        #ret_insts.extend([inst("PUSHIS",1), inst("PUSHIS",2), inst("COMM",0x70)]) #Add 1 Medicine previously for testing purposes
         for flag in world.checks[check_name].flag_rewards:
             ret_insts.append(inst("PUSHIS",flag.flag_id))
             ret_insts.append(inst("COMM",8))
+        #ret_insts.extend([inst("PUSHIS",1), inst("PUSHIS",55), inst("COMM",0x70)]) #Add 1 Float Ball post for testing purposes
+        ret_insts = [inst("PUSHIS",20),inst("COMM",0xe)] #small pause so you can read through skipping
         return ret_insts
     def get_flag_reward_location_string(self, flag_id, world):
         for check_name, check_obj in world.checks.items():
@@ -140,9 +143,25 @@ class Script_Modifier:
             print("WARNING: Callback insertion of",fun_name_insert,"overwriting data.")
         wap_file = wap_file[:location_insert] + bytes([2]) + bytes(assembler.ctobb(fun_name_insert,15)) + wap_file[location_insert+16:]
         self.dds3.add_new_file(file_path,BytesIO(wap_file))
+    def script_debug_out(self,bf_obj, bf_name):
+        assembler.bytesToFile(bf_obj.toBytes(),self.logpath+bf_name)
+        print("Logging script",bf_name)
+        outfile = open(self.logpath+bf_name+"asm",'w')
+        outfile.write(bf_obj.exportASM())
+        outfile.close()
+        #outfile.close()
+        # assembler.bytesToFile(f024_obj.toBytes(),"piped_scripts/f024.bf")
+        #outfile = open("piped_scripts/f024.bfasm",'w')
+        #outfile.write(f024_obj.exportASM())
+        #outfile.close()
 
     def run(self, world=None):
-    
+        
+        if SCRIPT_DEBUG:
+            self.logpath = 'logs/script_log{}/'.format(world.seed)
+            if not os.path.exists(self.logpath):
+                os.mkdir(self.logpath)
+        
         #World object: world.checks is a dict. Key is boss name as string (in logic.py)
         #   Value has boss.name to check with.
         #world.checks['Forneus'].boss.name is name of boss at Forneus check.
@@ -793,6 +812,8 @@ class Script_Modifier:
 
         f015_lb = self.push_bf_into_lb(f015_obj, 'f015')
         self.dds3.add_new_file(custom_vals.LB0_PATH['f015'], f015_lb)
+        if SCRIPT_DEBUG:
+            self.script_debug_out(f015_obj,'f015.bf')
 
         #Cutscene removal in Shibuya f017
         f017_obj = self.get_script_obj_by_name('f017')
@@ -952,6 +973,10 @@ class Script_Modifier:
         f017_lb = self.push_bf_into_lb(f017_obj, 'f017')
         self.dds3.add_new_file(custom_vals.LB0_PATH['f017'], f017_lb)
 
+        if SCRIPT_DEBUG:
+            self.script_debug_out(f017_obj,'f017.bf')
+
+        #Hijiri in Ginza
         #Shorten e623. e623_trm
         e623_obj = self.get_script_obj_by_name('e623')
         e623_trm_proc = e623_obj.getProcIndexByLabel('e623_trm')
@@ -963,7 +988,6 @@ class Script_Modifier:
         e623_insts[90] = inst("COMM",0xe)
         e623_obj.changeProcByIndex(e623_insts, e623_labels, e623_trm_proc)
         self.dds3.add_new_file(custom_vals.SCRIPT_OBJ_PATH['e623'],BytesIO(bytes(e623_obj.toBytes())))
-        
 
         #Cutscene removal in Amala Network 1 f018
         #4A0, 4A1, 4A2 (looks weird but eh).
@@ -1055,6 +1079,10 @@ class Script_Modifier:
         f018_lb.read_lb()
         f018_lb = f018_lb.export_lb({'BF': BytesIO(bytearray(f018_obj.toBytes())), 'WAP': BytesIO(f018_wap)})
         self.dds3.add_new_file(custom_vals.LB0_PATH['f018'], f018_lb)
+        if SCRIPT_DEBUG:
+            self.script_debug_out(f018_obj,'f018.bf')
+
+
         #reward message
         #flag insertion in pre-portion
 
@@ -1082,6 +1110,8 @@ class Script_Modifier:
         self.insert_callback('f019',0x1350,f019_troll_callback_str)
         f019_lb = self.push_bf_into_lb(f019_obj, 'f019')
         self.dds3.add_new_file(custom_vals.LB0_PATH['f019'], f019_lb)
+        if SCRIPT_DEBUG:
+            self.script_debug_out(f019_obj,'f019.bf')
 
         #Cutscene removal in Ginza Underpass f022
         #Shorten Matador
@@ -1227,6 +1257,9 @@ class Script_Modifier:
         
         f022_lb = self.push_bf_into_lb(f022_obj, 'f022')
         self.dds3.add_new_file(custom_vals.LB0_PATH['f022'], f022_lb)
+
+        if SCRIPT_DEBUG:
+            self.script_debug_out(f022_obj,'f022.bf')
 
         #Cutscene removal in Ikebukuro f023
         #913 set in Ikebukuro. 54b 54c 54d - 540, 549, 56C, 931, 75E
@@ -1375,6 +1408,9 @@ class Script_Modifier:
         
         f023_lb = self.push_bf_into_lb(f023_obj, 'f023')
         self.dds3.add_new_file(custom_vals.LB0_PATH['f023'], f023_lb)
+
+        if SCRIPT_DEBUG:
+            self.script_debug_out(f023_obj,'f023.bf')
 
         #Cutscene removal in Mantra HQ f024
         #560 on. Put into jail cell scene.
@@ -1551,13 +1587,13 @@ class Script_Modifier:
         f024_obj.changeProcByIndex(f024_10_insts, f024_10_labels, f024_10_room)
 
         f024_lb = self.push_bf_into_lb(f024_obj, 'f024')
-        # assembler.bytesToFile(f024_obj.toBytes(),"piped_scripts/f024.bf")
-        #outfile = open("piped_scripts/f024.bfasm",'w')
-        #outfile.write(f024_obj.exportASM())
-        #outfile.close()
+
         self.dds3.add_new_file(custom_vals.LB0_PATH['f024'], f024_lb)
         self.dds3.add_new_file(custom_vals.LB0_PATH['f024b'], f024_lb) #for some reason there's regular, b and c
         self.dds3.add_new_file(custom_vals.LB0_PATH['f024c'], f024_lb)
+
+        if SCRIPT_DEBUG:
+            self.script_debug_out(f024_obj,'f024.bf')
 
         #Cutscene removal in East Nihilo f020
         #Shorten Koppa & Incubus encounter
@@ -1809,6 +1845,9 @@ class Script_Modifier:
         f020_lb = self.push_bf_into_lb(f020_obj, 'f020')
         self.dds3.add_new_file(custom_vals.LB0_PATH['f020'], f020_lb)
 
+        if SCRIPT_DEBUG:
+            self.script_debug_out(f020_obj,'f020.bf')
+
         f003_obj = self.get_script_obj_by_name('f003')
         f003_proclen = len(f003_obj.p_lbls().labels)
         f003_ose_callback_message = f003_obj.appendMessage(self.get_reward_str("Ose",world),"OSE_REWARD")
@@ -1830,6 +1869,9 @@ class Script_Modifier:
         self.insert_callback('f020', 0x7fc, f003_ose_callback_proc_str)
         #The callback is in f020, but the proc is in f003 (outside Ginza).
         #interesting note: 001_01eve_08 happens going from Rainbow Bridge to Shiba, 001_01eve_07 happens going from Shiba to Rainbow Bridge. Probably responsible for changing encounter tables.
+
+        if SCRIPT_DEBUG:
+            self.script_debug_out(f003_obj,'f003.bf')
 
         #kilas: 3d2, 3d3, 3d4, 3d5
         #inserted kilas: 4ea, 4e7, 4e8, 4e9
@@ -1923,6 +1965,9 @@ class Script_Modifier:
         #f004_lb = self.push_bf_into_lb(f004_obj, 'f004')
         self.dds3.add_new_file(custom_vals.LB0_PATH['f004'], f004_lb)
 
+        if SCRIPT_DEBUG:
+            self.script_debug_out(f004_obj,'f004.bf')
+
         #Cutscene removal in Kabukicho Prison f025
         #Shorten forced Naga
         #Shorten Mizuchi
@@ -1959,10 +2004,9 @@ class Script_Modifier:
 
         f025_lb = self.push_bf_into_lb(f025_obj, 'f025b')
         self.dds3.add_new_file(custom_vals.LB0_PATH['f025b'], f025_lb)
-        #self.dds3.add_new_file("/fld/f/f025.bf",BytesIO(bytes(f025_obj.toBytes())))
-        #f025_bfasm = open("piped_scripts/f025.bfasm",'w')
-        #f025_bfasm.write(f025_obj.exportASM())
-        #f025_bfasm.close()
+
+        if SCRIPT_DEBUG:
+            self.script_debug_out(f025_obj,'f025.bf')
 
         #Cutscene removal in Ikebukuro Tunnel (anything at all?) f026
         #Kin-ki: 015_01eve_02. Area is 015_start obviously.
@@ -2060,7 +2104,10 @@ class Script_Modifier:
         
         f026_lb = self.push_bf_into_lb(f026_obj,'f026')
         self.dds3.add_new_file(custom_vals.LB0_PATH['f026'],f026_lb)
-        
+
+        if SCRIPT_DEBUG:
+            self.script_debug_out(f026_obj,'f026.bf')
+
         #Cutscene removal in Asakusa (Hijiri?) f027
         #Shorten Pale Rider
         #Move Black Frost to Sakahagi room.
@@ -2166,6 +2213,9 @@ class Script_Modifier:
         f027_lb = self.push_bf_into_lb(f027_obj,'f027')
         self.dds3.add_new_file(custom_vals.LB0_PATH['f027'],f027_lb)
 
+        if SCRIPT_DEBUG:
+            self.script_debug_out(f027_obj,'f027.bf')
+
         #Change e644 to fight Black Frost. Normally it's the Sakahagi cutscene in Asakusa, but we're repurposing it so no two bosses are in the same location.
         #Flag is 2e
         #Callback is 0x1ddc in f027
@@ -2198,6 +2248,9 @@ class Script_Modifier:
         e644_obj.changeProcByIndex(e644_insts, e644_labels, 0)
         self.dds3.add_new_file(custom_vals.SCRIPT_OBJ_PATH['e644'],BytesIO(bytes(e644_obj.toBytes())))
 
+        if SCRIPT_DEBUG:
+            self.script_debug_out(e644_obj,'e644.bf')
+
         #Bishamonten scene f039
         f039_obj = self.get_script_obj_by_name('f039')
         f039_obj.changeMessageByIndex(assembler.message("Well done.","SHORTER_B_TEXT"),0x11)
@@ -2215,6 +2268,9 @@ class Script_Modifier:
         f039_lb = self.push_bf_into_lb(f039_obj, 'f039')
         self.dds3.add_new_file(custom_vals.LB0_PATH['f039'], f039_lb)
         #Model lines: 41, 166 of 002_start, 23 of 039_B_AFTER
+
+        if SCRIPT_DEBUG:
+            self.script_debug_out(f039_obj,'f039.bf')
         
         #inst("PUSHIS",0x56),
         #inst("COMM",8),
@@ -2277,6 +2333,9 @@ class Script_Modifier:
         self.dds3.add_new_file(custom_vals.LB0_PATH['f035'], f035_lb)
         self.insert_callback('f035',0xf68,f035_futomimi_callback_str)
 
+        if SCRIPT_DEBUG:
+            self.script_debug_out(f035_obj,'f035.bf')
+
         #Cutscene removal in Obelisk f031
         #Anything? Could probably do everything with flags.
         #000_dh_plus is sisters callback. Any added flags can be put there.
@@ -2294,6 +2353,8 @@ class Script_Modifier:
         #Obelisk Yuko turns on: 0x46, 0x4e, 0x4c3. Turns off 0x48f.
         #0x50 is the cutscene with Hijiri after Obelisk.
 
+        if SCRIPT_DEBUG:
+            self.script_debug_out(f031_obj,'f031.bf')
 
         #Cutscene removal in Amala Network 2 f028
         #Shorten Specter 2 and add reward message
@@ -2332,6 +2393,11 @@ class Script_Modifier:
         f028_lb = self.push_bf_into_lb(f028_obj, 'f028')
         self.dds3.add_new_file(custom_vals.LB0_PATH['f028'], f028_lb)
         self.insert_callback('f028',0xf4,f028_specter2_callback_str)
+        
+        if SCRIPT_DEBUG:
+            self.script_debug_out(f028_obj,'f028.bf')
+
+        
         #set 0x43, 0x5ed
         #0x5f9 gets set on finish of network 2.
 
@@ -2484,9 +2550,9 @@ class Script_Modifier:
         ]
         e652_obj.changeProcByIndex(e652_kept_insts + e652_insert_insts, e652_labels, e652_proc)
         self.dds3.add_new_file(custom_vals.SCRIPT_OBJ_PATH['e652'],BytesIO(bytes(e652_obj.toBytes())))
-        #file = open("piped_scripts/e652.bfasm",'w')
-        #file.write(e652_obj.exportASM())
-        #file.close()
+ 
+        if SCRIPT_DEBUG:
+            self.script_debug_out(e652_obj,'e652.bf')
 
         #e660 version.
         #Issue is there is no yes/no decision text :(
@@ -2601,15 +2667,9 @@ class Script_Modifier:
         ]
         e660_obj.changeProcByIndex(e660_kept_insts + e660_insert_insts, e660_labels, e660_proc)
         self.dds3.add_new_file(custom_vals.SCRIPT_OBJ_PATH['e660'],BytesIO(bytes(e660_obj.toBytes())))
-        #file = open("piped_scripts/e660.bfasm",'w')
-        #file.write(e660_obj.exportASM())
-        #file.close()
-        #file1 = open("piped_scripts/e660.bf",'wb')
-        #file1.write(bytearray(e660_obj.toBytes()))
-        #file1.close()
-        #file2 = open("piped_scripts/e652.bf",'wb')
-        #file2.write(bytearray(e652_obj.toBytes()))
-        #file2.close()
+
+        if SCRIPT_DEBUG:
+            self.script_debug_out(e660_obj,'e660.bf')
 
         #Cutscene removal in Asakusa Tunnel (anything at all?) f029
 
@@ -2651,6 +2711,9 @@ class Script_Modifier:
         ]
         e658_obj.changeProcByIndex(e658_insts,e658_labels,0)
         self.dds3.add_new_file(custom_vals.SCRIPT_OBJ_PATH['e658'],BytesIO(bytes(e658_obj.toBytes())))
+
+        if SCRIPT_DEBUG:
+            self.script_debug_out(e658_obj,'e658.bf')
 
         f016_obj = self.get_script_obj_by_name("f016")
         #018_start has pixie cutscene.
@@ -2749,9 +2812,9 @@ class Script_Modifier:
         f016_lb = self.push_bf_into_lb(f016_obj,'f016')
         self.dds3.add_new_file(custom_vals.LB0_PATH['f016'],f016_lb)
         self.insert_callback('f016', 0x1b84, f016_gary_reward_proc_str)
-        #file = open('piped_scripts/f016.bfasm','w')
-        #file.write(f016_obj.exportASM())
-        #file.close()
+
+        if SCRIPT_DEBUG:
+            self.script_debug_out(f016_obj,'f016.bf')
 
         #Cutscene removal in Amala Network 3 f030
         #Shorten the one thing - if even because it's tiny. Add reward message
@@ -2776,6 +2839,9 @@ class Script_Modifier:
         f030_lb = self.push_bf_into_lb(f030_obj,'f030')
         self.dds3.add_new_file(custom_vals.LB0_PATH['f030'],f030_lb)
         
+        if SCRIPT_DEBUG:
+            self.script_debug_out(f030_obj,'f030.bf')
+
         #Cutscene removal in Amala Temple f034
         #Remove Intro and Fix Red Temple.
         #Shorten pre and post cutscenes. Make sure there are reward messages and a separate message for defeating all 3 that brings down the central pyramid.
@@ -3043,6 +3109,9 @@ class Script_Modifier:
         self.dds3.add_new_file(custom_vals.LB0_PATH['f034d'], f034d_lb)
         #set 0x51
 
+        if SCRIPT_DEBUG:
+            self.script_debug_out(f034_obj,'f034.bf')
+
         e703_obj = self.get_script_obj_by_name('e703')
         e703_msg = e703_obj.appendMessage("The Tower of Kagutsuchi has been lowered onto the Obelisk.^n"+self.get_checks_boss_name("Kagutsuchi",world)+" awaits!","TOK_LOWERED")
         e703_insts = [
@@ -3063,9 +3132,8 @@ class Script_Modifier:
         e703_obj.changeProcByIndex(e703_insts,[],0)
         self.dds3.add_new_file(custom_vals.SCRIPT_OBJ_PATH['e703'], BytesIO(bytes(e703_obj.toBytes())))
 
-        #file = open("piped_scripts/f034.bfasm",'w')
-        #file.write(f034_obj.exportASM())
-        #file.close()
+        if SCRIPT_DEBUG:
+            self.script_debug_out(e703_obj,'e703.bf')
 
         #Cutscene removal in Yurakucho Tunnel f021
         #Shorten Trumpeter
@@ -3142,8 +3210,13 @@ class Script_Modifier:
 
         f021_lb = self.push_bf_into_lb(f021_obj, 'f021')
         self.dds3.add_new_file(custom_vals.LB0_PATH['f021'], f021_lb)
+
+        #TODO
         #Insert archangels in the same room that has "009_01eve_08"
         #Plan: Move 009_01eve_08 over to the door, and have the normal door opening moved OoB. At that point we have BF control.
+
+        if SCRIPT_DEBUG:
+            self.script_debug_out(f021_obj,'f021.bf')
 
         #Cutscene removal in Diet Building f033
         #Shorten Mada and Mithra. Add reward messages for all bosses.
@@ -3250,6 +3323,9 @@ class Script_Modifier:
         f033_lb = self.push_bf_into_lb(f033_obj, 'f033')
         self.dds3.add_new_file(custom_vals.LB0_PATH['f033'], f033_lb)
 
+        if SCRIPT_DEBUG:
+            self.script_debug_out(f033_obj,'f033.bf')
+
         #e674_main
         #set bits: 0x904, 0x72 (then calls battle 0x2a0). 0x73 (closes door), 0x3da, 0x870, 0x6b7 (off), 0x76, 0x70, 0x71, 
         e674_obj = self.get_script_obj_by_name('e674')
@@ -3280,6 +3356,9 @@ class Script_Modifier:
         ]
         e674_obj.changeProcByIndex(e674_insts,e674_labels,0)
         self.dds3.add_new_file(custom_vals.SCRIPT_OBJ_PATH['e674'], BytesIO(bytes(e674_obj.toBytes())))
+
+        if SCRIPT_DEBUG:
+            self.script_debug_out(e674_obj,'e674.bf')
 
         #Going into ToK is 015_01eve_02 of Obelisk
         #With 0x660 set it's super quick.
@@ -3316,6 +3395,9 @@ class Script_Modifier:
         self.dds3.add_new_file(custom_vals.SCRIPT_OBJ_PATH['e681'], BytesIO(bytes(e681_obj.toBytes())))
         #Could probably blank out e678
 
+        if SCRIPT_DEBUG:
+            self.script_debug_out(e681_obj,'e681.bf')
+
         #Cutscene removal in ToK2 f036
         #Shorten Noah
         #013_01eve_09 is block. (inverse is 10)
@@ -3344,6 +3426,10 @@ class Script_Modifier:
         ]
         e680_obj.changeProcByIndex(e680_insts,[],0)
         self.dds3.add_new_file(custom_vals.SCRIPT_OBJ_PATH['e680'], BytesIO(bytes(e680_obj.toBytes())))
+
+        if SCRIPT_DEBUG:
+            self.script_debug_out(e680_obj,'e680.bf')
+
         #By setting 0x660, some stuff doesn't properly work. We'd like to keep 0x660 on, so we'll change the flag (using new flags, a30 and a31). This also allows direct ToK2 and ToK3 to work properly.
         #Change 012_start to use the 0xa30 flag and 013_start to be a duplicate (013 doesn't exist as a proc, but it's still referenced, and it's exactly where we want it).
         #There's a super duper corner-case scenario where you unlock ToK2 terminal externally, warp directly to ToK2, which doesn't trigger 012_start, then you go into 014 or 015 and it'll look weird. You still can't progress or lock yourself, and going back into 012 will call 012_start and fix it, so as far as I'm concerned there is no issue whatsoever. If someone submits a bug report for this situation, point them to this comment and say it is known and does not need to be fixed.
@@ -3365,6 +3451,9 @@ class Script_Modifier:
 
         f036_lb = self.push_bf_into_lb(f036_obj, 'f036')
         self.dds3.add_new_file(custom_vals.LB0_PATH['f036'], f036_lb)
+
+        if SCRIPT_DEBUG:
+            self.script_debug_out(f036_obj,'f036.bf')
 
         #Cutscene removal in ToK3 f037
         #Shorten Thor 2
@@ -3400,6 +3489,9 @@ class Script_Modifier:
         e682_obj.changeProcByIndex(e682_insts,[],0)
         self.dds3.add_new_file(custom_vals.SCRIPT_OBJ_PATH['e682'], BytesIO(bytes(e682_obj.toBytes())))
 
+        if SCRIPT_DEBUG:
+            self.script_debug_out(e682_obj,'e682.bf')
+
         f037_obj = self.get_script_obj_by_name('f037')
         #Same 0x660 problem as ToK2. Use 0xa31, a32, a33, a34 instead.
         f037_19_proc = f037_obj.getProcIndexByLabel('019_start')
@@ -3430,6 +3522,9 @@ class Script_Modifier:
 
         f037_lb = self.push_bf_into_lb(f037_obj, 'f037')
         self.dds3.add_new_file(custom_vals.LB0_PATH['f037'], f037_lb)
+
+        if SCRIPT_DEBUG:
+            self.script_debug_out(f037_obj,'f037.bf')
 
         #Cutscene removal in LoA Lobby f040
         #If possible, have each hole with 3 options. Jump, Skip, Cancel

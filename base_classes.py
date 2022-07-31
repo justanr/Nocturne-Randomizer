@@ -23,6 +23,7 @@ class World(object):
         self.demon_map = {}
 
         self.bonus_magatama = None
+        self.seed = ""
 
     def add_area(self, name):
         self.areas[name] = Area(name)

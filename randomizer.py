@@ -153,7 +153,7 @@ class Randomizer:
                 print("Error finding mutation for " + fiend.name)
 
         if self.config_make_logs:
-            with open('logs/demon_spoiler.txt', 'w') as f:
+            with open('logs/demon_spoiler_{}.txt'.format(self.text_seed), 'w') as f:
                 for key, value in demon_map.items():
                     f.write('Vanilla {} became Randomized {}\n'.format(nocturne.lookup_demon(key).name, nocturne.lookup_demon(value).name))
 
@@ -707,14 +707,14 @@ class Randomizer:
 
         with open('out/DDS3.DDT', 'rb') as ddt, open('out/DDS3.IMG', 'rb') as img:
             self.input_iso_file.export_iso(self.output_iso_path, {'DDS3.DDT;1': ddt, 'DDS3.IMG;1': img})
-
+        '''
         if not TEST:
             print('cleaning up files')
             os.remove('out/DDS3.DDT')
             os.remove('out/DDS3.IMG')
             os.remove('out/old_DDS3.DDT')
             os.remove('out/old_DDS3.IMG')
-
+        '''
     def export_to_hostfs(self):
         print("exporting modified dds3 fs")
         self.dds3.export_dds3_to_folder('out/dds3data')
@@ -950,8 +950,8 @@ e   balance skills of enemies based on level (doesn't affect your demons)'''
 
         logger = logging.getLogger('')
         if self.config_make_logs:
-            logging.basicConfig(filename='logs/spoiler.log', level=logging.INFO)
-            with open('logs/spoiler.log', 'w') as f:
+            logging.basicConfig(filename='logs/spoiler_{}.log'.format(self.text_seed), level=logging.INFO)
+            with open('logs/spoiler_{}.log'.format(self.text_seed), 'w') as f:
                 f.write("")
 
         print('initializing data')
@@ -966,6 +966,7 @@ e   balance skills of enemies based on level (doesn't affect your demons)'''
         while world is None:
             world = logic.create_world()
             world = logic.randomize_world(world, logger, self.config_vanilla_tok)
+        world.seed = self.text_seed
 
         # adjust the level of the bonus magatama
         nocturne.all_magatamas[world.bonus_magatama.name].level = 4
@@ -987,7 +988,7 @@ e   balance skills of enemies based on level (doesn't affect your demons)'''
         new_demons.extend(new_bosses)
         new_battles.extend(new_boss_battles)
         if self.config_make_logs:
-            self.write_demon_log('logs/random_demons.txt', new_demons)
+            self.write_demon_log('logs/random_demons_{}.txt'.format(self.text_seed), new_demons)
 
         # magatamas have to be randomized AFTER boss battles to correctly rebalance their levels
         print('randomizing magatamas')
