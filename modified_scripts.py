@@ -1879,6 +1879,9 @@ class Script_Modifier:
         f020_lb = self.push_bf_into_lb(f020_obj, 'f020')
         self.dds3.add_new_file(custom_vals.LB0_PATH['f020'], f020_lb)
 
+        if SCRIPT_DEBUG:
+            self.script_debug_out(f020_obj,'f020.bf')
+
         f003_obj = self.get_script_obj_by_name('f003')
         f003_proclen = len(f003_obj.p_lbls().labels)
 
