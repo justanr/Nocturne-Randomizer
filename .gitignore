@@ -117,7 +117,7 @@ rando.sublime-workspace
 *.DDT
 *.IMG
 
-config.ini
+#config.ini
 *.md5
 
 #nocturne_rando.exe

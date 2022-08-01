@@ -157,7 +157,7 @@ class Boss(object):
             return False
         elif isinstance(reward, Flag) and self.check.flag_rewards != []:
             return False
-        elif self.name == "Kagutsuchi" or self.check.name in ["Kaiwan", "Berith", "Archangels"]:
+        elif self.name == "Kagutsuchi" or self.check.name in ["Archangels"]:
             return False
         return True            
 

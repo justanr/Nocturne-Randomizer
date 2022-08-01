@@ -199,7 +199,7 @@ def randomize_bosses(boss_pool, check_pool, logger, attempts=100):
 def find_progressive_reward(state, check_pool, reward_pool):
     for r in reward_pool:
         state.get_reward(r)
-        completeable_checks = [c for c in check_pool if c.can_reach(state) and c.boss.can_beat(state) and c.name not in ["Kaiwan", "Berith", "Archangels"] and c.boss.name != "Kagutsuchi"] #Remove broken reward checks
+        completeable_checks = [c for c in check_pool if c.can_reach(state) and c.boss.can_beat(state) and c.name not in ["Archangels"] and c.boss.name != "Kagutsuchi"] #Remove broken reward checks
         can_progress = bool(completeable_checks)
         if can_progress:
             return r
@@ -337,12 +337,12 @@ def randomize_world(world, logger, config_vanilla_tok, attempts=100):
 
         chosen_boss = None
         # try to give the chosen reward to a boss with no magatama or flag reward 
-        no_reward_boss_pool = [b for b in shuffled_bosses if b.reward == None and b.check.flag_rewards == [] and b.name != "Kagutsuchi" and b.check.name not in ["Kaiwan", "Berith", "Archangels"]]
+        no_reward_boss_pool = [b for b in shuffled_bosses if b.reward == None and b.check.flag_rewards == [] and b.name != "Kagutsuchi" and b.check.name not in ["Archangels"]]
         if no_reward_boss_pool != []:
             chosen_boss = random.choice(no_reward_boss_pool)
         else:
             for b in shuffled_bosses:
-                if b.can_add_reward(chosen_reward) and b.name != "Kagutsuchi" and b.check.name not in ["Kaiwan", "Berith", "Archangels"]:
+                if b.can_add_reward(chosen_reward) and b.name != "Kagutsuchi" and b.check.name not in ["Archangels"]:
                     chosen_boss = b
                     break
             else:
@@ -359,12 +359,12 @@ def randomize_world(world, logger, config_vanilla_tok, attempts=100):
         reward = reward_pool.pop()
         chosen_boss = None
         # try to give the chosen reward to a boss with no magatama or flag reward 
-        no_reward_boss_pool = [b for b in bosses_progressed if b.check.area.name != 'ToK' and b.reward == None and b.check.flag_rewards == [] and b.name != "Kagutsuchi" and b.check.name not in ["Kaiwan", "Berith", "Archangels"]]
+        no_reward_boss_pool = [b for b in bosses_progressed if b.check.area.name != 'ToK' and b.reward == None and b.check.flag_rewards == [] and b.name != "Kagutsuchi" and b.check.name not in ["Archangels"]]
         if no_reward_boss_pool != []:
             chosen_boss = no_reward_boss_pool.pop()
         else:
             for b in bosses_progressed:
-                if b.check.area.name != 'ToK' and b.can_add_reward(reward) and b.name != "Kagutsuchi" and b.check.name not in ["Kaiwan", "Berith", "Archangels"]:
+                if b.check.area.name != 'ToK' and b.can_add_reward(reward) and b.name != "Kagutsuchi" and b.check.name not in ["Archangels"]:
                     chosen_boss = b
                     break
             else:

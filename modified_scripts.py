@@ -1842,18 +1842,50 @@ class Script_Modifier:
         f020_13_insts = f020_13_insts[:precut] + f020_13_insert_insts + f020_13_insts[postcut:]
         f020_obj.changeProcByIndex(f020_13_insts,f020_13_labels,f020_13_proc)
 
+        f020_berith_rwms_index = f020_obj.appendMessage(self.get_reward_str("Berith",world),"BERITH_REWARD")
+        f020_berith_rwms_insts = [
+            inst("PROC",len(f020_obj.p_lbls().labels)),
+            inst("COMM",0x60),
+            inst("COMM",1),
+            inst("PUSHIS",f020_berith_rwms_index),
+            inst("COMM",0),
+            inst("COMM",2),
+            inst("COMM",0x61),
+        ] + self.get_flag_reward_insts("Berith",world) + [    
+            inst("END"),
+        ]
+        f020_berith_callback_str = "BERITH_CB"
+        f020_obj.appendProc(f020_berith_rwms_insts, [], f020_berith_callback_str)
+        self.insert_callback('f020',0xf4,f020_berith_callback_str)
+
+        f020_kaiwan_rwms_index = f020_obj.appendMessage(self.get_reward_str("Kaiwan",world),"KAIWAN_REWARD")
+        f020_kaiwan_rwms_insts = [
+            inst("PROC",len(f020_obj.p_lbls().labels)),
+            inst("PUSHIS",0x3d4),
+            inst("COMM",0x8), 
+            inst("COMM",0x60),
+            inst("COMM",1),
+            inst("PUSHIS",f020_kaiwan_rwms_index),
+            inst("COMM",0),
+            inst("COMM",2),
+            inst("COMM",0x61),
+        ] + self.get_flag_reward_insts("Kaiwan",world) + [    
+            inst("END"),
+        ]
+        f020_kaiwan_callback_str = "KAIWAN_CB"
+        f020_obj.appendProc(f020_kaiwan_rwms_insts, [], f020_kaiwan_callback_str)
+        self.insert_callback('f020',0x158,f020_kaiwan_callback_str) #0x158 is the Kaiwan callback index
+
         f020_lb = self.push_bf_into_lb(f020_obj, 'f020')
         self.dds3.add_new_file(custom_vals.LB0_PATH['f020'], f020_lb)
 
-        if SCRIPT_DEBUG:
-            self.script_debug_out(f020_obj,'f020.bf')
-
         f003_obj = self.get_script_obj_by_name('f003')
         f003_proclen = len(f003_obj.p_lbls().labels)
+
         f003_ose_callback_message = f003_obj.appendMessage(self.get_reward_str("Ose",world),"OSE_REWARD")
         f003_ose_callback_proc_str = "OSE_CB"
         f003_ose_callback_insts = [
-            inst("PROC",f003_proclen),
+            inst("PROC",len(f003_obj.p_lbls().labels)),
             inst("COMM",0x60),
             inst("COMM",1),
             inst("PUSHIS",f003_ose_callback_message),
@@ -1867,6 +1899,7 @@ class Script_Modifier:
         f003_lb = self.push_bf_into_lb(f003_obj, 'f003')
         self.dds3.add_new_file(custom_vals.LB0_PATH['f003'], f003_lb)
         self.insert_callback('f020', 0x7fc, f003_ose_callback_proc_str)
+
         #The callback is in f020, but the proc is in f003 (outside Ginza).
         #interesting note: 001_01eve_08 happens going from Rainbow Bridge to Shiba, 001_01eve_07 happens going from Shiba to Rainbow Bridge. Probably responsible for changing encounter tables.
 
