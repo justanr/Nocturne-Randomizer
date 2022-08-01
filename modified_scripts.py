@@ -112,7 +112,7 @@ class Script_Modifier:
             ret_insts.append(inst("PUSHIS",flag.flag_id))
             ret_insts.append(inst("COMM",8))
         #ret_insts.extend([inst("PUSHIS",1), inst("PUSHIS",55), inst("COMM",0x70)]) #Add 1 Float Ball post for testing purposes
-        ret_insts = [inst("PUSHIS",20),inst("COMM",0xe)] #small pause so you can read through skipping
+        ret_insts.extend( [inst("PUSHIS",20),inst("COMM",0xe)] )#small pause so you can read through skipping
         return ret_insts
     def get_flag_reward_location_string(self, flag_id, world):
         for check_name, check_obj in world.checks.items():
