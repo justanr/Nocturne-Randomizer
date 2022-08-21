@@ -6,6 +6,7 @@ import hashlib
 import string
 import sys
 import os
+import tkinter as tk
 from collections import defaultdict
 from io import BytesIO
 from configparser import ConfigParser
@@ -745,52 +746,148 @@ class Randomizer:
         if BETA:
             print("WARNING: This is a beta build and things may not work as intended.\nContact PinkPajamas or NMarkro if you encounter any bugs\n")
 
+        window = tk.Tk()
+        button = tk.Button(
+            text="Randomize!",
+            width=25,
+            height=5,
+            bg="#598074",
+            fg="black",
+        )
+        button.pack()
+
+        pathLabel = tk.Label(text="Please input the path to your SMT3 Nocturne ISO file below")
+        pathLabel.pack()
+
+        pathEntry = tk.Entry(fg="black", bg="#598074", width=50)
+        pathEntry.pack()
+
+        seedLabel = tk.Label(text="Please input your desired seed value below (blank for random seed)")
+        seedLabel.pack()
+
+        seedEntry = tk.Entry(fg="black", bg="#598074", width=50)
+        seedEntry.pack()
+
+        flagLabel = tk.Label(text="General Settings")
+        flagLabel.pack()
+
+        listFlags = tk.Listbox(selectmode = "multiple", width=100, exportselection=False, selectbackground = "#598074")
+        listFlags.insert(0, "Tweak 'pierce' skill to work with magic.")
+        listFlags.insert(1, "Remove hard mode shop price mulitplier.")
+        listFlags.insert(2, "Tweak AoE healing spells to affect demons in the stock.")
+        listFlags.insert(3, "Tweak inheritance so that all skills inherit equally regaless of rank or body parts.")
+        listFlags.insert(4, "Make learnable skills always visible.")
+        listFlags.insert(5, "Double EXP gains.")
+        listFlags.insert(6, "keep tower of Kagutsuchi bosses vanilla.")
+        listFlags.insert(7, "balance skills of enemies based on level (doesn't affect your demons).")
+        listFlags.pack()
+
+        musicLabel = tk.Label(text="Music Setting")
+        musicLabel.pack()
+
+        listMusic = tk.Listbox(selectmode = "single", exportselection=False, selectbackground = "#598074")
+        listMusic.insert(0, "Vanilla")
+        listMusic.insert(1, "Location-based")
+        listMusic.insert(2, "Random")
+        listMusic.selection_set(0)
+        listMusic.pack()
+
+        outputLabel = tk.Label(text="Export Format")
+        outputLabel.pack()
+
+        listOutput = tk.Listbox(selectmode = "single", width=50, exportselection=False, selectbackground = "#598074")
+        listOutput.insert(0, "ISO file *Recommended for most users*")
+        listOutput.insert(1, "HostFS folder *EXPERIEMENTAL*")
+        listOutput.selection_set(0)
+        listOutput.pack()
+        
+        configur = ConfigParser()
         if os.path.exists('config.ini'):
-            configur = ConfigParser()
             configur.read('config.ini')
             config_iso_path = configur.get('Files', 'Path').strip()
             config_flags = configur.get('Settings', 'Flags').strip()
             if os.path.exists(config_iso_path):
-                print('Config file found, previous ISO file path: {}'.format(config_iso_path))
-                response = input('Use previous ISO file? y/n\n> ').strip()
-                print()
-                if response[:1].lower() == 'y':
-                    self.input_iso_path = config_iso_path
+                pathEntry.insert(0, config_iso_path)
+                #print('Config file found, previous ISO file path: {}'.format(config_iso_path))
+                #response = input('Use previous ISO file? y/n\n> ').strip()
+                #print()
+                #if response[:1].lower() == 'y':
+                #    self.input_iso_path = config_iso_path
 
 
-            config_flags = ''
+            #config_flags = ''
             if configur.get('Settings', 'MagicPierce') == 'true':
-                config_flags = config_flags + 'p'
+                #config_flags = config_flags + 'p'
+                listFlags.selection_set(0)
             if configur.get('Settings', 'RemoveHardmodePrices') == 'true':
-                config_flags = config_flags + 'h'
+                #config_flags = config_flags + 's'
+                listFlags.selection_set(1)
             if configur.get('Settings', 'FixInheritance') == 'true':
-                config_flags = config_flags + 'i'
+                #config_flags = config_flags + 'i'
+                listFlags.selection_set(3)
             if configur.get('Settings', 'StockHealing') == 'true':
-                config_flags = config_flags + 'h'
+                #config_flags = config_flags + 'h'
+                listFlags.selection_set(2)
             if configur.get('Settings', 'VisibleSkills') == 'true':
-                config_flags = config_flags + 'v'
+                #config_flags = config_flags + 'v'
+                listFlags.selection_set(4)
             if configur.get('Settings', 'ExpModifier') == 'true':
-                config_flags = config_flags + 'd'
+                #config_flags = config_flags + 'd'
+                listFlags.selection_set(5)
             if configur.get('Settings', 'VanillaTok') == 'true':
-                config_flags = config_flags + 't'
+                #config_flags = config_flags + 't'
+                listFlags.selection_set(6)
             if configur.get('Settings', 'RandomMusic') == 'true':
-                config_flags = config_flags + 'm'
+                #config_flags = config_flags + 'm'
+                listMusic.selection_set(2)
             if configur.get('Settings', 'CheckBasedMusic') == 'true':
-                config_flags = config_flags + 'l'
+                listMusic.selection_set(1)
             if configur.get('Settings', 'EnemySkillScaling') == 'true':
                 config_flags = config_flags + 'e'
+                listFlags.selection_set(7)
+            if configur.get('Files', 'ExportToHostfs') == 'true':
+                listOutput.selection_set(1)
 
-            if config_flags:
-                print('Previous flags: {}'.format(config_flags))
-                response = input('Use previous flags? y/n\n> ').strip()
-                print()
-                if response[:1].lower() == 'y':
-                    self.flags = config_flags
+            #if config_flags:
+            #    print('Previous flags: {}'.format(config_flags))
+            #    response = input('Use previous flags? y/n\n> ').strip()
+            #    print()
+            #    if response[:1].lower() == 'y':
+            #        self.flags = config_flags
+        else:
+            configur.read('config.ini')
+            configur['Files'] = {'path': 'Nocturne.iso', 'exporttohostfs': False}
+            configur['Settings'] = {'flags': '', 'ExpModifier': False, 'VisibleSkills': False, 'MagicPierce': False, 'StockHealing': False, 'RemoveHardmodePrices': False, 'FixInheritance': False, 'VanillaTok': False, 'RandomMusic': False, 'CheckBasedMusic': False, 'EnemySkillScaling': False}
 
+        def randomizeClick(event):
+            window.quit()
+        button.bind("<Button-1>", randomizeClick)
 
-        if self.input_iso_path == None:
-            self.input_iso_path = input("Please input the path to your SMT3 Nocturne ISO file:\n> ").strip().replace('"', '').replace("'", "")
-            print()
+        window.mainloop()
+
+        self.input_iso_path = pathEntry.get()
+        self.text_seed = seedEntry.get()
+
+        self.flags = ""
+        FLAGMAP = ['p', 's', 'h', 'i', 'v', 'd', 't', 'e']
+        for i in listFlags.curselection():
+            self.flags = self.flags + FLAGMAP[i]
+        
+        musicChoice = listMusic.curselection()
+        if len(musicChoice) > 0 and musicChoice[0] == 1:
+            self.flags = self.flags + 'l'
+        elif len(musicChoice) > 0 and musicChoice[0] == 2:
+            self.flags = self.flags + 'm'
+        
+        self.config_export_to_hostfs = False
+        if (len(listOutput.curselection()) > 0 and listOutput.curselection()[0] == 1):
+            self.config_export_to_hostfs = True
+        
+        window.destroy()
+
+        #if self.input_iso_path == None:
+        #    self.input_iso_path = input("Please input the path to your SMT3 Nocturne ISO file:\n> ").strip().replace('"', '').replace("'", "")
+        #    print()
 
         if os.path.isdir(self.input_iso_path):
             print("Searching directory for ISO")
@@ -816,12 +913,12 @@ class Randomizer:
 
         configur.set('Files', 'Path', self.input_iso_path)
 
-        if self.text_seed is None:
-            self.text_seed = input("Please input your desired seed value (blank for random seed):\n> ").strip()
-            print()
-            if self.text_seed == "":
-                self.text_seed = ''.join(random.choices(string.ascii_uppercase + string.digits, k=10))
-                print('Your generated seed is: {}\n'.format(self.text_seed))
+        #if self.text_seed is None:
+        #    self.text_seed = input("Please input your desired seed value (blank for random seed):\n> ").strip()
+        #    print()
+        if self.text_seed == "":
+            self.text_seed = ''.join(random.choices(string.ascii_uppercase + string.digits, k=10))
+            print('Your generated seed is: {}\n'.format(self.text_seed))
         self.full_seed = '{}-{}-{}'.format(VERSION, self.text_seed, self.flags)
         seed = int(hashlib.sha256(self.full_seed.encode('utf-8')).hexdigest(), 16)
         random.seed(seed)
@@ -838,25 +935,24 @@ m   randomize boss music
 l   location-based boss music (overrides random music)
 e   balance skills of enemies based on level (doesn't affect your demons)'''
 
-        if self.flags == None:
-            print(flags_text)
-            self.flags = input("Please input your desired flags (blank for all, '.' for none):\n> ").strip()
-            print()
-            if self.flags == '':
-                self.flags = string.ascii_lowercase
+        #if self.flags == None:
+        #    print(flags_text)
+        #    self.flags = input("Please input your desired flags (blank for all, '.' for none):\n> ").strip()
+        #    print()
+        #    if self.flags == '':
+        #        self.flags = string.ascii_lowercase
 
         configur.set('Settings', 'Flags', self.flags)
 
         export_text = '''Export formats:
 1   ISO file *Recommended for most users*
 2   HostFS folder *EXPERIEMENTAL*'''
-        print(export_text)
-        response = input("Please input which format you would like to export to:\n> ").strip()
-        print()
-        if response[:1] == '1':
-            self.config_export_to_hostfs = False
+        #print(export_text)
+        #response = input("Please input which format you would like to export to:\n> ").strip()
+        #print()
+        if self.config_export_to_hostfs == False:
             configur.set('Files', 'ExportToHostfs', 'false')
-        elif response[:1] == '2':
+        elif self.config_export_to_hostfs == True:
             self.config_export_to_hostfs = True
             configur.set('Files', 'ExportToHostfs', 'true')
         else:
