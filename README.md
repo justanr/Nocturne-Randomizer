@@ -1,5 +1,9 @@
 ### Nocturne-Randomizer
 
+This is a build with recent changes that haven't been moved to the main build yet.
+
+For the main randomizer website, see https://github.com/nmarkro/Nocturne-Randomizer/
+
 This is a randomizer for Shin Megami Tensei: Nocturne.
 
 The randomization includes: boss shuffle, enemy/demon shuffle, skill randomization, Magatama and key item drops by bosses, and race randomizer for fusion logic.
@@ -23,7 +27,8 @@ Krisan Thyme (file format and tools documentation)
 Zombero (documentation from hardtye hack)
 
 ### Running the randomizer
-Windows users can download the latest from https://github.com/nmarkro/Nocturne-Randomizer/releases
+
+Windows users can download the code as a zip from this page
 
 Unzip and run nocturne_rando.exe
 
