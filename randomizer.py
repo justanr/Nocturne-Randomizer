@@ -550,7 +550,7 @@ class Randomizer:
 
             new_exp = old_boss_demon.exp_drop
             new_macca = old_boss_demon.macca_drop
-
+            
             if old_boss is not new_boss:
                 if new_level < new_boss_demon.level:
                     new_level /= 2
@@ -598,8 +598,8 @@ class Randomizer:
                     new_hp = min(new_hp, 4000)
                 if new_boss_demon.name == "Ongyo-Ki (Boss)":
                     new_hp = round(new_hp / 4)
-                    new_exp = round(new_exp / 18)
-                    new_macca = round(new_macca / 18)
+                    new_exp = round(new_exp / 8)
+                    new_macca = round(new_macca / 8)
                 if new_boss_demon.name not in self.always_goes_first:
                     boss_battle.goes_first = 0x0D
                 #balanced_demon = self.rebalance_demon(new_boss_demon, new_level, new_hp=new_hp, new_mp=new_mp, new_exp=new_exp, new_macca=new_macca, exp_mod=self.config_exp_modifier, stat_mod=1)

@@ -231,8 +231,9 @@ def load_battles(rom):
         for j in range(0, 18, 2):
             enemy_id = rom.read_halfword(offset + 6 + j)
             enemies.append(enemy_id)
-            #if enemy_id == 293:
-            #    print(rom.read_halfword(offset + 0x24))
+            #if enemy_id == 294:
+            #    print("big specter is here")
+            #    print(rom.read_halfword(offset + 0x02))
 
         battle = Battle(offset)
         battle.enemies = enemies
@@ -531,6 +532,18 @@ def fix_specter_1_reward(rom, reward):
     for offset in fused_reward_offsets:
         rom.write_halfword(reward, offset)
 
+def fix_ahriman_reward(rom, reward):
+    # fix magatama drop for ahriman, 0x002B3176 is second fight
+    fused_reward_offsets = [0x002B9322]
+    for offset in fused_reward_offsets:
+        rom.write_halfword(reward, offset)
+
+def fix_noah_reward(rom, reward):
+    # fix magatama drop for noah, 0x002B45F2 is second fight
+    fused_reward_offsets = [0x002B9348]
+    for offset in fused_reward_offsets:
+        rom.write_halfword(reward, offset)
+
 def fix_angel_reward(rom, reward):
     # fix the magatama drop for the optional angel fight
     offset = 0x002B63C8
@@ -674,11 +687,16 @@ def write_all(rando, world):
     for b in world.battles.values():
         if b.offset == world.get_boss("Specter 1").check.offset:
             if b.reward:
-                print("found a specter")
                 fix_specter_1_reward(rom, b.reward)
         elif b.offset == world.get_check("Futomimi").offset:
             if b.reward:
                 fix_angel_reward(rom, b.reward)
+        elif b.offset == world.get_boss("Ahriman").check.offset:
+            if b.reward:
+                fix_ahriman_reward(rom, b.reward)
+        elif b.offset == world.get_boss("Noah").check.offset:
+            if b.reward:
+                fix_noah_reward(rom, b.reward)
     #if world.get_boss("Specter 1").battle.reward:
     #    print("found a specter")
     #    fix_specter_1_reward(rom, world.get_boss("Specter 1").battle.reward) #fix specter 1 reward
