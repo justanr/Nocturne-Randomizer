@@ -10,7 +10,7 @@ The randomization includes: boss shuffle, enemy/demon shuffle, skill randomizati
 
 We are currently in the alpha/beta stages, and the randomizer itself is not complete with Labyrinth of Amala being blocked off. Expect changes to be frequent and game balance to be shaky.
 
-The list of added features and changes to the randomizer can be seen on this document: https://docs.google.com/document/d/1pZ_aiLmRK1lYKKDy6A23m2iAVeU1wcVut1-mGM4vkLM
+See Changes.txt for all the differences from the base branch
 
 Feel free to join the Nocturne Randomizer discord: https://discord.gg/d25ZAha
 

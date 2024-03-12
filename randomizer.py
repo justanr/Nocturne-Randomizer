@@ -9,7 +9,7 @@ import os
 import tkinter as tk
 from collections import defaultdict
 from io import BytesIO
-from configparser import ConfigParser
+from configparser import ConfigParser, NoOptionError
 
 import nocturne
 import logic
@@ -48,6 +48,7 @@ class Randomizer:
         self.config_random_music = False                # boss music is randomized
         self.config_check_based_music = False           # boss music is based on location rather than boss demon
         self.config_enemy_skill_scaling = False         # balances what skills enemy demons have to their level
+        self.config_fight_lucifer = False                      # sets route to TDE, so you fight Lucifer after Kagutsuchi and can learn pierce
         self.config_export_to_hostfs = False            # Build to folder with HostFS patch instead of an .iso
 
     def init_iso_data(self):
@@ -780,6 +781,7 @@ class Randomizer:
         listFlags.insert(5, "Double EXP gains.")
         listFlags.insert(6, "keep tower of Kagutsuchi bosses vanilla.")
         listFlags.insert(7, "balance skills of enemies based on level (doesn't affect your demons).")
+        listFlags.insert(8, "TDE Mode (Fight Lucifer)")
         listFlags.pack()
 
         musicLabel = tk.Label(text="Music Setting")
@@ -816,37 +818,46 @@ class Randomizer:
 
 
             #config_flags = ''
-            if configur.get('Settings', 'MagicPierce') == 'true':
-                #config_flags = config_flags + 'p'
-                listFlags.selection_set(0)
-            if configur.get('Settings', 'RemoveHardmodePrices') == 'true':
-                #config_flags = config_flags + 's'
-                listFlags.selection_set(1)
-            if configur.get('Settings', 'FixInheritance') == 'true':
-                #config_flags = config_flags + 'i'
-                listFlags.selection_set(3)
-            if configur.get('Settings', 'StockHealing') == 'true':
-                #config_flags = config_flags + 'h'
-                listFlags.selection_set(2)
-            if configur.get('Settings', 'VisibleSkills') == 'true':
-                #config_flags = config_flags + 'v'
-                listFlags.selection_set(4)
-            if configur.get('Settings', 'ExpModifier') == 'true':
-                #config_flags = config_flags + 'd'
-                listFlags.selection_set(5)
-            if configur.get('Settings', 'VanillaTok') == 'true':
-                #config_flags = config_flags + 't'
-                listFlags.selection_set(6)
-            if configur.get('Settings', 'RandomMusic') == 'true':
-                #config_flags = config_flags + 'm'
-                listMusic.selection_set(2)
-            if configur.get('Settings', 'CheckBasedMusic') == 'true':
-                listMusic.selection_set(1)
-            if configur.get('Settings', 'EnemySkillScaling') == 'true':
-                config_flags = config_flags + 'e'
-                listFlags.selection_set(7)
-            if configur.get('Files', 'ExportToHostfs') == 'true':
-                listOutput.selection_set(1)
+            try:
+                if configur.get('Settings', 'MagicPierce') == 'true':
+                    #config_flags = config_flags + 'p'
+                    listFlags.selection_set(0)
+                if configur.get('Settings', 'RemoveHardmodePrices') == 'true':
+                    #config_flags = config_flags + 's'
+                    listFlags.selection_set(1)
+                if configur.get('Settings', 'FixInheritance') == 'true':
+                    #config_flags = config_flags + 'i'
+                    listFlags.selection_set(3)
+                if configur.get('Settings', 'StockHealing') == 'true':
+                    #config_flags = config_flags + 'h'
+                    listFlags.selection_set(2)
+                if configur.get('Settings', 'VisibleSkills') == 'true':
+                    #config_flags = config_flags + 'v'
+                    listFlags.selection_set(4)
+                if configur.get('Settings', 'ExpModifier') == 'true':
+                    #config_flags = config_flags + 'd'
+                    listFlags.selection_set(5)
+                if configur.get('Settings', 'VanillaTok') == 'true':
+                    #config_flags = config_flags + 't'
+                    listFlags.selection_set(6)
+                if configur.get('Settings', 'RandomMusic') == 'true':
+                    #config_flags = config_flags + 'm'
+                    listMusic.selection_set(2)
+                if configur.get('Settings', 'CheckBasedMusic') == 'true':
+                    listMusic.selection_set(1)
+                if configur.get('Settings', 'EnemySkillScaling') == 'true':
+                    config_flags = config_flags + 'e'
+                    listFlags.selection_set(7)
+                if configur.get('Settings', 'FightLucifer') == 'true':
+                    config_flags = config_flags + 'f'
+                    listFlags.selection_set(8)
+                if configur.get('Files', 'ExportToHostfs') == 'true':
+                    listOutput.selection_set(1)
+            except NoOptionError:
+                configur.read('config.ini')
+                configur['Files'] = {'path': 'Nocturne.iso', 'exporttohostfs': False}
+                configur['Settings'] = {'flags': '', 'ExpModifier': False, 'VisibleSkills': False, 'MagicPierce': False, 'StockHealing': False, 'RemoveHardmodePrices': False, 'FixInheritance': False, 'VanillaTok': False, 'RandomMusic': False, 'CheckBasedMusic': False, 'EnemySkillScaling': False, 'FightLucifer': False}
+
 
             #if config_flags:
             #    print('Previous flags: {}'.format(config_flags))
@@ -857,7 +868,7 @@ class Randomizer:
         else:
             configur.read('config.ini')
             configur['Files'] = {'path': 'Nocturne.iso', 'exporttohostfs': False}
-            configur['Settings'] = {'flags': '', 'ExpModifier': False, 'VisibleSkills': False, 'MagicPierce': False, 'StockHealing': False, 'RemoveHardmodePrices': False, 'FixInheritance': False, 'VanillaTok': False, 'RandomMusic': False, 'CheckBasedMusic': False, 'EnemySkillScaling': False}
+            configur['Settings'] = {'flags': '', 'ExpModifier': False, 'VisibleSkills': False, 'MagicPierce': False, 'StockHealing': False, 'RemoveHardmodePrices': False, 'FixInheritance': False, 'VanillaTok': False, 'RandomMusic': False, 'CheckBasedMusic': False, 'EnemySkillScaling': False, 'FightLucifer': False}
 
         def randomizeClick(event):
             window.quit()
@@ -869,7 +880,7 @@ class Randomizer:
         self.text_seed = seedEntry.get()
 
         self.flags = ""
-        FLAGMAP = ['p', 's', 'h', 'i', 'v', 'd', 't', 'e']
+        FLAGMAP = ['p', 's', 'h', 'i', 'v', 'd', 't', 'e', 'f']
         for i in listFlags.curselection():
             self.flags = self.flags + FLAGMAP[i]
         
@@ -933,7 +944,8 @@ d   Double EXP gains.
 t   keep tower of Kagutsuchi bosses vanilla
 m   randomize boss music
 l   location-based boss music (overrides random music)
-e   balance skills of enemies based on level (doesn't affect your demons)'''
+e   balance skills of enemies based on level (doesn't affect your demons)
+f   TDE Mode (Fight Lucifer)'''
 
         #if self.flags == None:
         #    print(flags_text)
@@ -1019,6 +1031,12 @@ e   balance skills of enemies based on level (doesn't affect your demons)'''
             configur.set('Settings', 'EnemySkillScaling', 'true')
         else:
             configur.set('Settings', 'EnemySkillScaling', 'false')
+            
+        if 'f' in self.flags:
+            self.config_fight_lucifer = True
+            configur.set('Settings', 'FightLucifer', 'true')
+        else:
+            configur.set('Settings', 'FightLucifer', 'false')
 
         with open('config.ini', 'w') as configfile:
             configur.write(configfile)
@@ -1103,7 +1121,7 @@ e   balance skills of enemies based on level (doesn't affect your demons)'''
 
         print ("patching scripts")
         script_modifier = Script_Modifier(self.dds3)
-        script_modifier.run(world)
+        script_modifier.run(world, self.config_fight_lucifer)
 
         # just overwrite the old title screen tmx
         # I'm too lazy to rewrite the lb fs just for this

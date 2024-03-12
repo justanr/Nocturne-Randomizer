@@ -1,3 +1,47 @@
+version 0.2.5
+*New Flag: TDE Mode - Allows you to inherit pierce from Marogareh and fight Lucifer after Kagutsuchi
+*If an Amala temple key fails to drop when it's supposed to, you can now fight the Bishamon 1 check to receive all 3 keys to prevent being softlocked. Text when collecting the Kimon Stone is changed to reflect this. This is not in intended logic and will be removed once all of the key item drop glitches are found and patched out.
+*After triggering the descent of ToK, the Marunouchi terminal will automatically unlock for teleportation.
+*Bugfix: The Futomimi/Archangels check now drops key items properly
+*Bugfix: When Girimehkala is vanilla, he will now properly drop magatamas
+
+version 0.2.4
+*Specter 1's reward fixed
+*Girimekhala check now gives the correct amount of exp
+*More settings added to config file. They can now be changed outside of the program, 
+but not much else is done with them yet
+*Flag 'e' added for enemy skill scaling, and all skills are now assigned a level
+
+version 0.2.3
+* Ongyo-Ki's exp and macca decreased
+* normal enemy checks that can use beast eye/dragon eye have had their ai-scripts restored
+for whichever demon replaces them
+* Added new unique skills: Fire of Sinai, Death Flies, Icy Death, Foul Havoc, Tentacle, Bael's Bane,
+and Phase Shift
+
+version 0.2.2
+* Ahriman and Noah's checks now work properly, instead of using Metatron and Beelzebub's check
+* Specter 2's starting mp is fixed to 29, max mp is uncapped
+* exe file has been built, some of the smaller changes aren't reflected in it yet
+* Two music flags have been added: m for random boss music, and l for location based boss music
+* The odds of a demon with no unique skills gaining 1 has been lowered form 10% to 7%
+* Muspell is no longer a valid prerequisite to ailment-based bosses
+
+Version 0.2.1:
+* Luficer is no longer in the randomizer
+* Ongyo-Ki now has 1/4 hp, exp, and macca to match having to kill all 4 replicas
+* Albion and Kagutsuchi's check now have increased hp to match Kagutsuchi's phases and Albion's summons
+* Locked specter 2's mp to 40
+* Bishamon 1 check requires all 3 amala temple bosses to be beaten to so it is no longer required to complete a seed
+* Added config flag "t" for vanilla tower of kagutsuchi
+* Various logic changes to match the more open-nature of the randomizer, while ensuring there isn't too
+big of a leap in difficulty
+* Added item Ongyo-Key at id 0x97 to open ikebukuro tunnel. It is in logic, however, the tunnel itself is not blocked
+until the item is obtained
+* (From last patch, forgot to include in changes) Demons without unique skills have a 10% chance to gain one.
+* If there are multiple enemies at the Ongyo-Ki check, AOE attacks will miss, and attacking a single enemy
+removes the others from the field. Any enemy can be targeted, there are no illusions.
+
 Version 0.2.0
 Logic
 * All bosses are now included in the randomizer
@@ -28,41 +72,3 @@ Other Changes
 * The boss at Kagutsuchi's check is revealed when using the yahiro-no-himorogi
 * The warning message for a field model not found has had the boss's name removed
 * The substitute for bosses with no field model has been changed from Vishnu to Mothman
-
-
-Version 0.2.1:
-* Luficer is no longer in the randomizer
-* Ongyo-Ki now has 1/4 hp, exp, and macca to match having to kill all 4 replicas
-* Albion and Kagutsuchi's check now have increased hp to match Kagutsuchi's phases and Albion's summons
-* Locked specter 2's mp to 40
-* Bishamon 1 check requires all 3 amala temple bosses to be beaten to so it is no longer required to complete a seed
-* Added config flag "t" for vanilla tower of kagutsuchi
-* Various logic changes to match the more open-nature of the randomizer, while ensuring there isn't too
-big of a leap in difficulty
-* Added item Ongyo-Key at id 0x97 to open ikebukuro tunnel. It is in logic, however, the tunnel itself is not blocked
-until the item is obtained
-* (From last patch, forgot to include in changes) Demons without unique skills have a 10% chance to gain one.
-* If there are multiple enemies at the Ongyo-Ki check, AOE attacks will miss, and attacking a single enemy
-removes the others from the field. Any enemy can be targeted, there are no illusions.
-
-version 0.2.2
-* Ahriman and Noah's checks now work properly, instead of using Metatron and Beelzebub's check
-* Specter 2's starting mp is fixed to 29, max mp is uncapped
-* exe file has been built, some of the smaller changes aren't reflected in it yet
-* Two music flags have been added: m for random boss music, and l for location based boss music
-* The odds of a demon with no unique skills gaining 1 has been lowered form 10% to 7%
-* Muspell is no longer a valid prerequisite to ailment-based bosses
-
-version 0.2.3
-* Ongyo-Ki's exp and macca decreased
-* normal enemy checks that can use beast eye/dragon eye have had their ai-scripts restored
-for whichever demon replaces them
-* Added new unique skills: Fire of Sinai, Death Flies, Icy Death, Foul Havoc, Tentacle, Bael's Bane,
-and Phase Shift
-
-version 0.2.4
-*Specter 1's reward fixed
-*Girimekhala check now gives the correct amount of exp
-*More settings added to config file. They can now be changed outside of the program, 
-but not much else is done with them yet
-*Flag 'e' added for enemy skill scaling, and all skills are now assigned a level

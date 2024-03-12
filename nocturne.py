@@ -531,6 +531,12 @@ def fix_specter_1_reward(rom, reward):
     fused_reward_offsets = [0x002B2842, 0x002B2868, 0x002B288E]
     for offset in fused_reward_offsets:
         rom.write_halfword(reward, offset)
+        
+def fix_girimehkala_reward(rom, reward):
+    # fix magatama drop for vanilla girimehkala
+    fused_reward_offsets = [0x002B2900]
+    for offset in fused_reward_offsets:
+        rom.write_halfword(reward, offset)
 
 def fix_ahriman_reward(rom, reward):
     # fix magatama drop for ahriman, 0x002B3176 is second fight
@@ -688,6 +694,9 @@ def write_all(rando, world):
         if b.offset == world.get_boss("Specter 1").check.offset:
             if b.reward:
                 fix_specter_1_reward(rom, b.reward)
+        elif b.offset == world.get_check("Girimehkala").offset:
+            if b.reward:
+                fix_girimehkala_reward(rom, b.reward)
         elif b.offset == world.get_check("Futomimi").offset:
             if b.reward:
                 fix_angel_reward(rom, b.reward)

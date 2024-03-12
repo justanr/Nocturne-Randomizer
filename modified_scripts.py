@@ -1,3 +1,4 @@
+from logging import config
 import nocturne_script_assembler as assembler
 import customizer_values as custom_vals
 
@@ -155,7 +156,7 @@ class Script_Modifier:
         #outfile.write(f024_obj.exportASM())
         #outfile.close()
 
-    def run(self, world=None):
+    def run(self, world=None, config_fight_lucifer=False):
         
         if SCRIPT_DEBUG:
             self.logpath = 'logs/script_log{}/'.format(world.seed)
@@ -583,7 +584,7 @@ class Script_Modifier:
             inst("PUSHIS",1760), #mifunashiro entrance
             inst("COMM",8),
             inst("PUSHIS",1925), #loki sidequest started
-            inst("COMM",8),
+            inst("COMM",8), #insert TDE flags before this line
             inst("PUSHIS",4),
             inst("COMM",0x158), #+4 stock
             inst("PUSHIS",0),
@@ -606,6 +607,16 @@ class Script_Modifier:
             inst("COMM",0x66),
             inst("END",0)
         ]
+        
+        e601_TDE_insts = [
+            inst("PUSHIS",0x126),
+            inst("COMM",8),
+            inst("PUSHIS",0x8c1),
+            inst("COMM",8),
+        ]
+        
+        if config_fight_lucifer:
+            e601_insts = e601_insts[:-21] + e601_TDE_insts + e601_insts[-21:]
 
         e601_obj.changeProcByIndex(e601_insts,[],0) #empty list is relative branch labels
         # convert the script object to a filelike object and add it to the dds3 file system
@@ -2293,7 +2304,17 @@ class Script_Modifier:
         f039_obj.changeMessageByIndex(assembler.message(self.get_reward_str("Bishamon 1",world),"BISHA_REWARD"),0x13)
         f039_rwms_proc = f039_obj.getProcIndexByLabel('039_B_AFTER')
         f039_rwms_insts, f039_rwms_labels = f039_obj.getProcInstructionsLabelsByIndex(f039_rwms_proc)
-        f039_rwms_insts = f039_rwms_insts[:-1] + self.get_flag_reward_insts("Bishamon 1",world) + [inst("END")]
+
+        f039_keys_insts = [
+            inst("PUSHIS",0x3f1), #Black Key (testing purposes)
+            inst("COMM",8),
+            inst("PUSHIS",0x3f2), #White Key (testing purposes)
+            inst("COMM",8),
+            inst("PUSHIS",0x3f3), #Red Key (testing purposes)
+            inst("COMM",8),   
+        ]
+
+        f039_rwms_insts = f039_rwms_insts[0:2] + f039_keys_insts + f039_rwms_insts[2:-1] + self.get_flag_reward_insts("Bishamon 1",world) + [inst("END")]
         f039_rwms_insts[23] = inst("PUSHIS",self.get_checks_boss_id("Bishamon 1",world))
         f039_obj.changeProcByIndex(f039_rwms_insts,[],f039_rwms_proc) #No labels in the proc
         f039_02_proc = f039_obj.getProcIndexByLabel("002_start")
@@ -2304,7 +2325,7 @@ class Script_Modifier:
         f039_lb = self.push_bf_into_lb(f039_obj, 'f039')
         self.dds3.add_new_file(custom_vals.LB0_PATH['f039'], f039_lb)
         #Model lines: 41, 166 of 002_start, 23 of 039_B_AFTER
-
+        
         if SCRIPT_DEBUG:
             self.script_debug_out(f039_obj,'f039.bf')
         
@@ -2339,6 +2360,24 @@ class Script_Modifier:
                 l.label_offset += len(f035_futomimi_insert_insts)
         f035_09_insts = f035_09_insts[:precut] + f035_futomimi_insert_insts + f035_09_insts[postcut:]
         f035_obj.changeProcByIndex(f035_09_insts, f035_09_labels, f035_09_index)
+
+        #f035_angel_rwms_index = f035_obj.appendMessage(self.get_reward_str("Archangels",world),"ANGEL_REWARD")
+        #f035_angel_rwms_insts = [
+        #    inst("PROC",len(f035_obj.p_lbls().labels)),
+        #    inst("COMM",0x60),
+        #    inst("COMM",1),
+        #    inst("PUSHIS",f035_angel_rwms_index),
+        #    inst("COMM",0),
+        #    inst("COMM",2),
+        #    inst("COMM",0x61),
+        #] + self.get_flag_reward_insts("Archangels",world) + [    
+        #    inst("END"),
+        #]
+        #f035_angel_callback_str = "ANGEL_CB"
+        #f035_obj.appendProc(f035_angel_rwms_insts, [], f035_angel_callback_str)
+        
+
+
         f035_futomimi_rwms_index = f035_obj.appendMessage(self.get_reward_str("Futomimi",world),"FUTO_RWMS")
         f035_futomimi_callback_insts = [
             inst("PROC",len(f035_obj.p_lbls().labels)),
@@ -2347,6 +2386,12 @@ class Script_Modifier:
             inst("PUSHIS",f035_futomimi_rwms_index),
             inst("COMM",0),
             inst("COMM",2),
+            #inst("COMM",1),
+            #inst("PUSHIS",f035_angel_rwms_index), #adds archangels reward message to the same place
+            #inst("COMM",0),
+            #inst("COMM",2),
+            
+        ] + self.get_flag_reward_insts("Futomimi",world) + [
             inst("COMM",0x61),
             
             inst("PUSHIS",673),#Should work???
@@ -2359,8 +2404,6 @@ class Script_Modifier:
             inst("COMM",0x97),
             inst("COMM",0x23),
             inst("COMM",0x2e),
-            inst("END")
-        ] + self.get_flag_reward_insts("Futomimi",world) + [
             inst("END")
         ]
         f035_futomimi_callback_str = "FUTO_CB"
@@ -3161,6 +3204,8 @@ class Script_Modifier:
             inst("COMM",2),
             inst("PUSHIS",0x96),
             inst("COMM",8),
+            inst("PUSHIS",0x4e2), #Unlock Nihilo Marunochi Terminal
+            inst("COMM",8),
             inst("COMM",0x23),#FLD_EVENT_END2
             inst("COMM",0x2e),
             inst("END")
@@ -3243,6 +3288,7 @@ class Script_Modifier:
         self.insert_callback('f021', 0xf4, f021_toot_reward_proc_str)
 
         f021_obj.changeMessageByIndex(assembler.message("You sense the presence of^n^r"+self.get_checks_boss_name("Trumpeter",world)+"^p.","FIRE_YURE"),0x38)
+        f021_obj.changeMessageByIndex(assembler.message("At the Northern Temple,^nyou can get back lost keys^nwith this Kimon Stone I found.^nCheck it out if one of your^ntemple keys failed to drop!^n^xIt's just a backup though.^nDon't use it to cheat.","SIGE_04"),0x14)
 
         f021_lb = self.push_bf_into_lb(f021_obj, 'f021')
         self.dds3.add_new_file(custom_vals.LB0_PATH['f021'], f021_lb)
@@ -3527,6 +3573,8 @@ class Script_Modifier:
 
         if SCRIPT_DEBUG:
             self.script_debug_out(e682_obj,'e682.bf')
+            self.script_debug_out(self.get_script_obj_by_name('e718'),'e718.bf')
+            self.script_debug_out(self.get_script_obj_by_name('e719'),'e719.bf')
 
         f037_obj = self.get_script_obj_by_name('f037')
         #Same 0x660 problem as ToK2. Use 0xa31, a32, a33, a34 instead.
