@@ -1,6 +1,7 @@
 from logging import config
 import nocturne_script_assembler as assembler
 import customizer_values as custom_vals
+import nocturne
 
 from io import BytesIO
 from os import path
@@ -71,6 +72,19 @@ Beelzebub: ???
 Metatron: ???
 '''
 SCRIPT_DEBUG = False
+
+IMMERSIVE_NAMES = {
+    "Thor 1": "Thor",
+    "Thor 2": "Thor",
+    "Specter 1": "Specter",
+    "Specter 2": "Specter",
+    "Specter 3": "Specter",
+    "Dante 1": "Dante",
+    "Dante 2": "Dante",
+    "Sisters": "Lachesis",
+    "Archangels": "Gabriel",
+}
+
 #instruction creation shortcut
 def inst(opcode_str,operand=0):
     return assembler.instruction(assembler.OPCODES[opcode_str],operand)
@@ -112,6 +126,14 @@ class Script_Modifier:
         for flag in world.checks[check_name].flag_rewards:
             ret_insts.append(inst("PUSHIS",flag.flag_id))
             ret_insts.append(inst("COMM",8))
+            if flag.additional_ids:
+                for extra_id in flag.additional_ids:
+                    ret_insts.append(inst("PUSHIS",extra_id))
+                    ret_insts.append(inst("COMM",8))
+        if world.checks[check_name].boss.name == "Kagutsuchi" and world.checks[check_name].boss.reward is not None: #Fix for Kagutsuchi not dropping rewards
+            magatama = world.checks[check_name].boss.reward.id
+            ret_insts.append(inst("PUSHIS",magatama))
+            ret_insts.append(inst("COMM",0x122))
         #ret_insts.extend([inst("PUSHIS",1), inst("PUSHIS",55), inst("COMM",0x70)]) #Add 1 Float Ball post for testing purposes
         ret_insts.extend( [inst("PUSHIS",20),inst("COMM",0xe)] )#small pause so you can read through skipping
         return ret_insts
@@ -122,17 +144,20 @@ class Script_Modifier:
                     return custom_vals.LOCATION_NAMES_BY_CHECK[check_name]
         print ("Warning: In get_flag_reward_location_string(), flag",hex(flag_id),"not found.")
         return ""
-    def get_checks_boss_id(self, check_name, world):
+    def get_checks_boss_id(self, check_name, world, index=0):
         boss_of_check = world.checks[check_name].boss.name
-        if boss_of_check in custom_vals.DEMON_ID_BY_NAME:
-            return custom_vals.DEMON_ID_BY_NAME[boss_of_check]
-        if boss_of_check in custom_vals.BOSS_DEMON_ID_BY_NAME:
-            return custom_vals.BOSS_DEMON_ID_BY_NAME[boss_of_check]
+        #if boss_of_check in custom_vals.DEMON_ID_BY_NAME:
+        #    return custom_vals.DEMON_ID_BY_NAME[boss_of_check]
+        if boss_of_check in custom_vals.BOSS_DEMON_MODEL_IDS_BY_NAME:
+            return custom_vals.BOSS_DEMON_MODEL_IDS_BY_NAME[boss_of_check][index]
         #print("Error: In get_checks_boss_id(), ID of boss",boss_of_check,"who is",check_name,"was not found")
         print("Error: a field boss model does not exist and will show a generic replacement")
         return 122 #Mothman!
-    def get_checks_boss_name(self, check_name, world):
-        return world.checks[check_name].boss.name
+    def get_checks_boss_name(self, check_name, world, immersive=False):
+        boss_name = world.checks[check_name].boss.name
+        if immersive and boss_name in IMMERSIVE_NAMES:
+            boss_name = IMMERSIVE_NAMES[boss_name]
+        return boss_name
     def insert_callback(self, field_string, location_insert, fun_name_insert, overwrite_warning=True):
         if len(fun_name_insert) > 15:
             print("ERROR: In insert_callback().",fun_name_insert,"is over 15 characters long")
@@ -156,7 +181,7 @@ class Script_Modifier:
         #outfile.write(f024_obj.exportASM())
         #outfile.close()
 
-    def run(self, world=None, config_fight_lucifer=False):
+    def run(self, world=None, config_settings=None):
         
         if SCRIPT_DEBUG:
             self.logpath = 'logs/script_log{}/'.format(world.seed)
@@ -337,8 +362,6 @@ class Script_Modifier:
             inst("COMM",8),
             inst("PUSHIS",0x665), #Final room splash
             inst("COMM",8),
-            inst("PUSHIS",0x95), #Neutral reason
-            inst("COMM",8),
             inst("PUSHIS",0x760), #1st Kalpa splash
             inst("COMM",8),
             inst("PUSHIS",0x780), #2nd Kalpa splash
@@ -349,6 +372,40 @@ class Script_Modifier:
             inst("COMM",8),
             inst("PUSHIS",0x7e0), #5th Kalpa splash
             inst("COMM",8),
+            inst("PUSHIS",0x10f), #LoA lobby first cutscene
+            inst("COMM",8),
+            inst("PUSHIS",0x10c), #LoA lobby first cutscene flag 2
+            inst("COMM",8),
+            inst("PUSHIS",0x3ea), #Candelabrum of Sovereignty
+            inst("COMM",8),
+            inst("PUSHIS",0x75e), #LoA lobby initial visit flag
+            inst("COMM",8),
+            inst("PUSHIS",0x3d9), #Spoon
+            inst("COMM",8),
+            inst("PUSHIS",0x78a), #Metatron's voice in Kalpa 2
+            inst("COMM",8),
+            inst("PUSHIS",0x7b8), #Kalpa 3 Rider Cutscene
+            inst("COMM",8),
+            inst("PUSHIS",0x11d), #Met Dante in Kalpa 3
+            inst("COMM",0x8),
+            inst("PUSHIS",0x7b1), #Dante switch
+            inst("COMM",0x8),
+            inst("PUSHIS",0x7b3), #Dante switch
+            inst("COMM",0x8),
+            inst("PUSHIS",0x7b4), #Dante switch
+            inst("COMM",0x8),
+            inst("PUSHIS",0x7a6), #Dante textbox
+            inst("COMM",0x8),
+            inst("PUSHIS",0x7b9), #Dante textbox
+            inst("COMM",0x8),
+            inst("PUSHIS",0x7aa), #Dante textbox
+            inst("COMM",0x8),
+            inst("PUSHIS",0x7a8), #Dante textbox
+            inst("COMM",0x8),
+            inst("PUSHIS",0x7a7), #Dante textbox
+            inst("COMM",0x8),
+            inst("PUSHIS",0x110), #Said no to recruit Dante
+            inst("COMM",0x8),
             #inst("PUSHIS",0x3f1), #Black Key (testing purposes)
             #inst("COMM",8),
             #inst("PUSHIS",0x3f2), #White Key (testing purposes)
@@ -584,8 +641,8 @@ class Script_Modifier:
             inst("PUSHIS",1760), #mifunashiro entrance
             inst("COMM",8),
             inst("PUSHIS",1925), #loki sidequest started
-            inst("COMM",8), #insert TDE flags before this line
-            inst("PUSHIS",4),
+            inst("COMM",8), 
+            inst("PUSHIS",4), #insert TDE flags before this line
             inst("COMM",0x158), #+4 stock
             inst("PUSHIS",0),
             inst("PUSHIS",0),
@@ -607,16 +664,21 @@ class Script_Modifier:
             inst("COMM",0x66),
             inst("END",0)
         ]
+       
+        e601_bonus_insts = []   
+        if config_settings.open_ikebukuro:
+            e601_bonus_insts += [
+                inst("PUSHIS", 0x3f7),
+                inst("COMM", 0x8)
+            ]
+
+        if config_settings.open_yurakucho:
+            e601_bonus_insts += [
+                inst("PUSHIS", 0x56),
+                inst("COMM", 0x8)
+            ]
         
-        e601_TDE_insts = [
-            inst("PUSHIS",0x126),
-            inst("COMM",8),
-            inst("PUSHIS",0x8c1),
-            inst("COMM",8),
-        ]
-        
-        if config_fight_lucifer:
-            e601_insts = e601_insts[:-21] + e601_TDE_insts + e601_insts[-21:]
+        e601_insts = e601_insts[:-21] + e601_bonus_insts + e601_insts[-21:]
 
         e601_obj.changeProcByIndex(e601_insts,[],0) #empty list is relative branch labels
         # convert the script object to a filelike object and add it to the dds3 file system
@@ -802,6 +864,12 @@ class Script_Modifier:
             assembler.label("BRIDER_FOUGHT",47),
             assembler.label("BRIDER_RAN",44)
         ]
+        if config_settings.menorah_groups: #Remove candelabra if randomized
+            del f015_14_insts[33:35]
+            f015_14_labels = [
+                assembler.label("BRIDER_FOUGHT",45),
+                assembler.label("BRIDER_RAN",42)
+            ]
         f015_obj.changeProcByIndex(f015_14_insts, f015_14_labels, f015_14_proc)
 
         f015_brider_callback_str = "BR_CB"
@@ -878,7 +946,8 @@ class Script_Modifier:
         f017_obj.changeMessageByIndex(assembler.message(self.get_reward_str("Mara",world),"MARA_RWMS"),0x19)
 
         #TODO: Change fire text to White Rider boss name
-        #TODO: Change some text to Mara.
+        #Mara hint message
+        f017_obj.changeMessageByIndex(assembler.message("> A ceremony is being prepared^nto summon ^r"+self.get_checks_boss_name("Mara",world)+"^p with an eggplant^nfrom ^g"+self.get_flag_reward_location_string(0x3f6,world)+"^p.","AYASII"),0x1)
 
         #001_w_rider for warning.
         #bit checks: 5c0, 7b8, 112 unset. Turns off 0x755.
@@ -888,6 +957,10 @@ class Script_Modifier:
         f017_wr_insts, f017_wr_labels = f017_obj.getProcInstructionsLabelsByIndex(f017_wr_proc)
         f017_wr_insts[4] = inst("PUSHIS",0x3f4)
         f017_obj.changeProcByIndex(f017_wr_insts, f017_wr_labels, f017_wr_proc)
+        f017_wr2_proc = f017_obj.getProcIndexByLabel("003_pixy") #There are two of these. Booooo
+        f017_wr2_insts, f017_wr2_labels = f017_obj.getProcInstructionsLabelsByIndex(f017_wr2_proc)
+        f017_wr2_insts[4] = inst("PUSHIS",0x3f4)
+        f017_obj.changeProcByIndex(f017_wr2_insts, f017_wr2_labels, f017_wr2_proc)
         #003_01eve_01
         #bit checks: 5c0, 7b8, 755 off, 112 off.
         #Run away: 755 on.
@@ -949,6 +1022,12 @@ class Script_Modifier:
             assembler.label("WRIDER_FOUGHT",47),
             assembler.label("WRIDER_RAN",44)
         ]
+        if config_settings.menorah_groups: #Remove candelabra if randomized
+            del f017_03_insts[33:35]
+            f017_03_labels = [
+                assembler.label("WRIDER_FOUGHT",45),
+                assembler.label("WRIDER_RAN",42)
+            ]
 
         f017_03_2_insts = [
             inst("PROC",f017_03_2_proc),
@@ -998,7 +1077,15 @@ class Script_Modifier:
         e623_insts[89] = inst("PUSHIS",1)
         e623_insts[90] = inst("COMM",0xe)
         e623_obj.changeProcByIndex(e623_insts, e623_labels, e623_trm_proc)
+
+        #Specter 1 hint
+        e623_obj.changeMessageByIndex(assembler.message("Help me rid the Amala^nNetwork of ^r"+self.get_checks_boss_name("Specter 1",world)+"^p.","MSG_TRM_1"),0xd)        
+
         self.dds3.add_new_file(custom_vals.SCRIPT_OBJ_PATH['e623'],BytesIO(bytes(e623_obj.toBytes())))
+
+        if SCRIPT_DEBUG:
+            self.script_debug_out(self.get_script_obj_by_name('f018'),'f018.bf')
+            self.script_debug_out(self.get_script_obj_by_name('e623'),'e623.bf')
 
         #Cutscene removal in Amala Network 1 f018
         #4A0, 4A1, 4A2 (looks weird but eh).
@@ -1119,8 +1206,36 @@ class Script_Modifier:
         ]
         f019_obj.appendProc(f019_troll_callback_insts,[],f019_troll_callback_str)
         self.insert_callback('f019',0x1350,f019_troll_callback_str)
+
+        f019_troll_proc = f019_obj.getProcIndexByLabel("006_start") #Change troll model to new boss
+        f019_troll_insts, f019_troll_labels = f019_obj.getProcInstructionsLabelsByIndex(f019_troll_proc)
+        f019_troll_insts[13] = inst("PUSHIS",self.get_checks_boss_id("Troll",world))
+        f019_troll_insts[44] = inst("PUSHIS",self.get_checks_boss_id("Troll",world))
+        f019_obj.changeProcByIndex(f019_troll_insts, f019_troll_labels, f019_troll_proc)
+        
+        f019_obj.changeMessageByIndex(assembler.message("> The door was locked by^n^r"+self.get_checks_boss_name("Troll",world)+"^p.^x> Will you unlock it?" ,"F019_DOOR01a"),0x51)        
+
+        #Remove white rider from Ginza always
+        f019_rider_flame_proc = f019_obj.getProcIndexByLabel("001_w_rider")
+        f019_rider_flame_insts, f019_rider_flame_labels = f019_obj.getProcInstructionsLabelsByIndex(f019_rider_flame_proc)
+        f019_rider_flame_insts[6] = inst("PUSHIS",0x113) #Switch flag to pale rider fought so it's never relevant
+        f019_obj.changeProcByIndex(f019_rider_flame_insts, f019_rider_flame_labels, f019_rider_flame_proc)
+        f019_rider_fight_proc = f019_obj.getProcIndexByLabel("001_01eve_01")
+        f019_rider_fight_insts, f019_rider_fight_labels = f019_obj.getProcInstructionsLabelsByIndex(f019_rider_fight_proc)
+        f019_rider_fight_insts[1] = inst("PUSHIS",0x113) #Switch flag to pale rider fought so it's never relevant
+        f019_obj.changeProcByIndex(f019_rider_fight_insts, f019_rider_fight_labels, f019_rider_fight_proc)
+        f019_rider_fight2_proc = f019_obj.getProcIndexByLabel("001_01eve_02")
+        f019_rider_fight2_insts, f019_rider_fight2_labels = f019_obj.getProcInstructionsLabelsByIndex(f019_rider_fight2_proc)
+        f019_rider_fight2_insts[1] = inst("PUSHIS",0x113) #Switch flag to pale rider fought so it's never relevant
+        f019_obj.changeProcByIndex(f019_rider_fight2_insts, f019_rider_fight2_labels, f019_rider_fight2_proc)
+        f019_rider_fight3_proc = f019_obj.getProcIndexByLabel("001_01eve_03") #There are 3 Ginza rider battles because why?
+        f019_rider_fight3_insts, f019_rider_fight3_labels = f019_obj.getProcInstructionsLabelsByIndex(f019_rider_fight3_proc)
+        f019_rider_fight3_insts[1] = inst("PUSHIS",0x113) #Switch flag to pale rider fought so it's never relevant
+        f019_obj.changeProcByIndex(f019_rider_fight3_insts, f019_rider_fight3_labels, f019_rider_fight3_proc)
+        
         f019_lb = self.push_bf_into_lb(f019_obj, 'f019')
         self.dds3.add_new_file(custom_vals.LB0_PATH['f019'], f019_lb)
+        
         if SCRIPT_DEBUG:
             self.script_debug_out(f019_obj,'f019.bf')
 
@@ -1247,6 +1362,12 @@ class Script_Modifier:
             assembler.label("RRIDER_FOUGHT",47),
             assembler.label("RRIDER_RAN",44)
         ]
+        if config_settings.menorah_groups: #Remove candelabra if randomized
+            del f022_10_insts[33:35]
+            f022_10_labels = [
+                assembler.label("RRIDER_FOUGHT",45),
+                assembler.label("RRIDER_RAN",42)
+            ]
         f022_obj.changeProcByIndex(f022_10_insts, f022_10_labels, f022_10_proc)
 
         f022_rrider_callback_str = "RR_CB"
@@ -1328,7 +1449,12 @@ class Script_Modifier:
             assembler.label("DAISOUJOU_FOUGHT",43),
             assembler.label("DAISOUJOU_RAN",40)
         ]
-
+        if config_settings.menorah_groups: #Remove candelabra if randomized
+            del f023_03_insts[27:29]
+            f023_03_labels = [
+                assembler.label("DAISOUJOU_FOUGHT",41),
+                assembler.label("DAISOUJOU_RAN",38)
+            ]
         f023_obj.changeProcByIndex(f023_03_insts, f023_03_labels, f023_03_room)
 
         f023_03_room_2 = f023_obj.getProcIndexByLabel("003_01eve_01") #Completely copy-pasted from the above, but is triggered from a different position. Just call the other one dammit.
@@ -1364,6 +1490,18 @@ class Script_Modifier:
         self.insert_callback('f023',0x284,f023_daisoujou_callback_str)
         #seek to 0x284 of f023.wap. write 02 then "DAI_RWMSPR"
 
+        f023_obj.changeMessageByIndex(assembler.message("I've come here to join the Mantra,^nso that I can become just like^nthe great King, hee ho!^n............^n^xBut, I'm too scared to go in, hee ho!^n^r"+self.get_checks_boss_name("Dante 1",world)+"^p's on the roof ho." ,"F023_HIHO"),0x6f)        
+        
+        #Remove white rider from Ikebukero always
+        f023_rider_flame_proc = f023_obj.getProcIndexByLabel("001_w_rider")
+        f023_rider_flame_insts, f023_rider_flame_labels = f023_obj.getProcInstructionsLabelsByIndex(f023_rider_flame_proc)
+        f023_rider_flame_insts[6] = inst("PUSHIS",0x113) #Switch flag to pale rider fought so it's never relevant
+        f023_obj.changeProcByIndex(f023_rider_flame_insts, f023_rider_flame_labels, f023_rider_flame_proc)
+        f023_rider_fight_proc = f023_obj.getProcIndexByLabel("006_01eve_02")
+        f023_rider_fight_insts, f023_rider_fight_labels = f023_obj.getProcInstructionsLabelsByIndex(f023_rider_fight_proc)
+        f023_rider_fight_insts[1] = inst("PUSHIS",0x113) #Switch flag to pale rider fought so it's never relevant
+        f023_obj.changeProcByIndex(f023_rider_fight_insts, f023_rider_fight_labels, f023_rider_fight_proc)
+        
         #pushis 0x32a, comm 0x66 is call dante
         #set bit 0x100
         #dante start code is short enough I'll just rewrite the whole thing
@@ -1542,6 +1680,8 @@ class Script_Modifier:
             inst("COMM",8),
             inst("PUSHIS",0x549), #Dante Flag. 0x100 needs to not be set for this to work correctly.
             inst("COMM",8),
+            inst("PUSHIS",0x581), #Kabukicho terminal so Dante 1 doesn't softlock
+            inst("COMM",8),
             inst("COMM",1), #display message window
             inst("PUSHIS",97), #Magatama get message
             inst("COMM",0),
@@ -1596,6 +1736,29 @@ class Script_Modifier:
                     #TODO: Do better than just move the labels
 
         f024_obj.changeProcByIndex(f024_10_insts, f024_10_labels, f024_10_room)
+        
+        #f024_names = f024_obj.sections[3].names.names
+        #f024_yaksini_name_index = f024_names.index("Yaksini")
+        #f024_names[f024_yaksini_name_index] = self.get_checks_boss_name("Yaksini",world)
+        #f024_yaksini_name_len_diff = len(self.get_checks_boss_name("Yaksini",world)) - 7
+        #f024_names_pointers = f024_obj.sections[3].names.names_pointers
+        #for i in range(f024_yaksini_name_index + 1, len(f024_names_pointers)):
+        #    f024_names_pointers[i] = f024_names_pointers[i] + f024_yaksini_name_len_diff
+        #f024_obj.sections[3].m_size += f024_yaksini_name_len_diff
+        #f024_obj.sections[3].rolling_pointer += f024_yaksini_name_len_diff
+        #f024_obj.sections[4].offset += f024_yaksini_name_len_diff
+        f024_obj.changeNameByLookup("Orthrus", self.get_checks_boss_name("Orthrus",world, immersive=True))
+        f024_obj.changeNameByLookup("Yaksini", self.get_checks_boss_name("Yaksini",world, immersive=True))
+        f024_obj.changeNameByLookup("Thor", self.get_checks_boss_name("Thor 1",world, immersive=True))
+        f024_yaksini_name_id = f024_obj.sections[3].messages[0x59].name_id
+        f024_yaksini_message = assembler.message("Just beating "+self.get_checks_boss_name("Orthrus",world, immersive=True)+" isn't going to^noverturn the decision.^n^xYour sentence is death...^nAhh... I want to cut you up right now!^n^xBut, I'll give you some time.^nMake it fun for me." ,"K_TARA_01")
+        f024_yaksini_message.name_id = f024_yaksini_name_id
+        f024_obj.changeMessageByIndex(f024_yaksini_message,0x59)
+        f024_thor_name_id = f024_obj.sections[3].messages[0x5b].name_id
+        f024_thor_message = assembler.message("I am "+self.get_checks_boss_name("Thor 1",world, immersive=True)+".^n^xI commend your ability to fight.^n^xBut...^n^xWill your power work against me?^n^xMy hammer shall be the judge.^n^xI will give you time to prepare." ,"K_TORU_01")
+        f024_thor_message.name_id = f024_thor_name_id
+        f024_obj.changeMessageByIndex(f024_thor_message,0x5b)  
+
 
         f024_lb = self.push_bf_into_lb(f024_obj, 'f024')
 
@@ -1789,8 +1952,6 @@ class Script_Modifier:
             inst("END")
         ]
 
-        #TODO: Berith, Kaiwan reward message and flag insertion
-
         f020_08_insts = [f020_08_insts[0]] + f020_08_insert_insts_autokilacheck + f020_08_insts[1:precut] + f020_08_insts[postcut:-1] + f020_08_insert_insts_autokila_do
         #TODO: make sure 4e0 is NOT set in e506, or replace it altogether.
         f020_obj.changeProcByIndex(f020_08_insts, f020_08_labels, f020_08_room)
@@ -1886,6 +2047,34 @@ class Script_Modifier:
         f020_kaiwan_callback_str = "KAIWAN_CB"
         f020_obj.appendProc(f020_kaiwan_rwms_insts, [], f020_kaiwan_callback_str)
         self.insert_callback('f020',0x158,f020_kaiwan_callback_str) #0x158 is the Kaiwan callback index
+        
+        f020_berith_proc = f020_obj.getProcIndexByLabel("024_01eve_01") #Change berith model to new boss
+        f020_berith_insts, f020_berith_labels = f020_obj.getProcInstructionsLabelsByIndex(f020_berith_proc)
+        f020_berith_insts[25] = inst("PUSHIS",self.get_checks_boss_id("Berith",world))
+        f020_obj.changeProcByIndex(f020_berith_insts, f020_berith_labels, f020_berith_proc)
+        f020_eligor_name_id = f020_obj.sections[3].messages[0x16].name_id
+        f020_eligor_message = assembler.message("^r"+self.get_checks_boss_name("Berith",world)+"^p says that's enough..." ,"HEISHI01")
+        f020_eligor_message.name_id = f020_eligor_name_id
+        f020_obj.changeMessageByIndex(f020_eligor_message,0x16)        
+        #Unsure if this is the correct door, look carefully
+
+        f020_kaiwan_proc = f020_obj.getProcIndexByLabel("027_start") #Change kaiwan model to new boss
+        f020_kaiwan_insts, f020_kaiwan_labels = f020_obj.getProcInstructionsLabelsByIndex(f020_kaiwan_proc)
+        f020_kaiwan_insts[311] = inst("PUSHIS",self.get_checks_boss_id("Kaiwan",world)) #Middle Kaiwan
+        f020_kaiwan_insts[323] = inst("PUSHIS",self.get_checks_boss_id("Kaiwan",world, index = 1)) #Kaiwan on the left
+        f020_kaiwan_insts[335] = inst("PUSHIS",self.get_checks_boss_id("Kaiwan",world, index=2)) #Kaiwan on the right
+        f020_obj.changeProcByIndex(f020_kaiwan_insts, f020_kaiwan_labels, f020_kaiwan_proc)
+        f020_obj.changeMessageByIndex(assembler.message("> ^r"+self.get_checks_boss_name("Kaiwan",world)+"^p unlocked the door.^n^x> Will you enter?" ,"F020_KIUNDOOR02"),0x6e)        
+
+        #Ose hint message, may be the wrong door
+        f020_obj.changeMessageByIndex(assembler.message("> You sense ^r"+self.get_checks_boss_name("Ose",world)+"^p^nbeyond the door.^n^x> Will you enter?" ,"HON_ENT"),0x4c)        
+        
+        f020_obj.changeNameByLookup("Berith", self.get_checks_boss_name("Berith",world, immersive=True))
+        f020_obj.changeNameByLookup("Kaiwan", self.get_checks_boss_name("Kaiwan",world, immersive=True))
+        f020_berith_name_id = f020_obj.sections[3].messages[0x22].name_id
+        f020_berith_message = assembler.message("Halt...^n^xI am "+self.get_checks_boss_name("Berith",world, immersive=True)+", the great duke of hell.^n^xInsolent scoundrel, put down^nthe Kila and begone!" ,"BERI01")
+        f020_berith_message.name_id = f020_berith_name_id
+        f020_obj.changeMessageByIndex(f020_berith_message,0x22)
 
         f020_lb = self.push_bf_into_lb(f020_obj, 'f020')
         self.dds3.add_new_file(custom_vals.LB0_PATH['f020'], f020_lb)
@@ -1981,6 +2170,12 @@ class Script_Modifier:
             assembler.label("BIKER_RAN",40),
             assembler.label("BIKER_FOUGHT",37)
         ]
+        if config_settings.menorah_groups: #Remove candelabra if randomized
+            del f004_biker_insts[28:30]
+            f004_biker_labels = [
+                assembler.label("BIKER_RAN",38),
+                assembler.label("BIKER_FOUGHT",35)
+            ]
         f004_obj.changeProcByIndex(f004_biker_insts,f004_biker_labels,f004_biker_event)
         f004_biker_callback_proc_str = "HBIKER_CB"
         f004_biker_callback_msg = f004_obj.appendMessage(self.get_reward_str("Hell Biker",world),"HBIKER_REWARD")
@@ -1998,6 +2193,9 @@ class Script_Modifier:
         ]
         f004_obj.appendProc(f004_biker_callback_insts,[],f004_biker_callback_proc_str)
         self.insert_callback('f004', 0x540, f004_biker_callback_proc_str)
+        
+        #Ongyo-Key hint
+        f004_obj.changeMessageByIndex(assembler.message("> East Ikebukuro Station.^n^x> The key is stashed in^n^g"+self.get_flag_reward_location_string(0x3f7,world)+"^p.","SUBWAY"),0x0)
         
         #Swap the 0x24 flag for Ikebukuro Tunnel to the 0x3f7 Ongyo-Key
         f004_wap = bytearray(self.dds3.get_file_from_path(custom_vals.WAP_PATH['f004']).read())
@@ -2041,6 +2239,8 @@ class Script_Modifier:
         f025_mizuchi_room_insts = f025_mizuchi_room_insts[:precut] + f025_mizuchi_room_insert_insts + f025_mizuchi_room_insts[postcut:]
         f025_obj.changeProcByIndex(f025_mizuchi_room_insts, f025_mizuchi_room_labels, f025_mizuchi_room)
         f025_obj.changeMessageByIndex(assembler.message(self.get_reward_str("Mizuchi",world),"MIZUCHI_REWARD"),0x62)
+        f025_obj.changeMessageByIndex(assembler.message("> You sense ^r"+self.get_checks_boss_name("Mizuchi",world)+"^p^nbeyond the door.^n^x> Will you enter?" ,"F025_DOOR01"),0xb4)        
+        
 
         f025_021_05 = f025_obj.getProcIndexByLabel("021_01eve_05") #I don't think this gets executed, but I was frustrated when I chose the wrong LB file and this also has the Mizuchi text.
         f025_021_insts = [
@@ -2149,6 +2349,37 @@ class Script_Modifier:
         f026_obj.appendProc(f026_ongyoki_rwms_insts, [], f026_ongyoki_callback_str)
         self.insert_callback('f026',0x220,f026_ongyoki_callback_str)
         
+        f026_ongyo_proc = f026_obj.getProcIndexByLabel("017_start") #Change ongyo-ki model to new boss and add hint message
+        f026_ongyo_insts, f026_ongyo_labels = f026_obj.getProcInstructionsLabelsByIndex(f026_ongyo_proc)
+        f026_ongyo_insts[17] = inst("PUSHIS",self.get_checks_boss_id("Ongyo-Ki",world))
+        f026_obj.changeProcByIndex(f026_ongyo_insts, f026_ongyo_labels, f026_ongyo_proc)
+        f026_obj.changeMessageByIndex(assembler.message("> You sense ^r"+self.get_checks_boss_name("Ongyo-Ki",world)+"^p^nbeyond the door..." ,"F26_FUIN_YOKI"),0x2b)
+        
+        f026_obj.changeNameByLookup("Kin-ki", self.get_checks_boss_name("Kin-Ki",world, immersive=True))
+        f026_obj.changeNameByLookup("Sui-ki", self.get_checks_boss_name("Sui-Ki",world, immersive=True))
+        f026_obj.changeNameByLookup("Fuu-ki", self.get_checks_boss_name("Fuu-Ki",world, immersive=True))
+        f026_obj.changeNameByLookup("Ongyo-ki", self.get_checks_boss_name("Ongyo-Ki",world, immersive=True))
+        
+
+        f026_kinki_name_id = f026_obj.sections[3].messages[0x10].name_id
+        f026_kinki_message = assembler.message("............^n^x...WHAT DO YOU WANT?^n^xI AM "+self.get_checks_boss_name("Kin-Ki",world, immersive=True).upper()+". YOU FILTHY DOG..." ,"F26_KINKI")
+        f026_kinki_message.name_id = f026_kinki_name_id
+        f026_obj.changeMessageByIndex(f026_kinki_message,0x10) 
+        f026_obj.changeMessageByIndex(assembler.message("> "+self.get_checks_boss_name("Kin-Ki",world, immersive=True)+" is not listening. What will^nyou do?" ,"F26_KINKI_2"),0x11)
+        f026_obj.changeMessageByIndex(assembler.message("> "+self.get_checks_boss_name("Kin-Ki",world, immersive=True)+"'s breathing is getting heavier." ,"F26_KINKI_HANA"),0x15)
+        f026_suiki_name_id = f026_obj.sections[3].messages[0x16].name_id
+        f026_suiki_message = assembler.message("...I've never seen you before.^n^xI'm "+self.get_checks_boss_name("Sui-Ki",world, immersive=True)+".^n^xI'm a cold demon." ,"F26_SUIKI")
+        f026_suiki_message.name_id = f026_suiki_name_id
+        f026_obj.changeMessageByIndex(f026_suiki_message,0x16) 
+        f026_fuuki_name_id = f026_obj.sections[3].messages[0x1f].name_id
+        f026_fuuki_message = assembler.message("Yee-haw!^n^xI'm "+self.get_checks_boss_name("Fuu-Ki",world, immersive=True)+".^n^xYou must have some time on your^nhands, making it all the way down^nhere." ,"F26_FUUKI")
+        f026_fuuki_message.name_id = f026_fuuki_name_id
+        f026_obj.changeMessageByIndex(f026_fuuki_message,0x1f) 
+        f026_ongyoki_name_id = f026_obj.sections[3].messages[0x2c].name_id
+        f026_ongyoki_message = assembler.message("My name is "+self.get_checks_boss_name("Ongyo-Ki",world, immersive=True)+"...^n^xAre you the one who slew my^npartners and awakened me!?" ,"F26_ONGYO")
+        f026_ongyoki_message.name_id = f026_ongyoki_name_id
+        f026_obj.changeMessageByIndex(f026_ongyoki_message,0x2c)      
+        
         f026_lb = self.push_bf_into_lb(f026_obj,'f026')
         self.dds3.add_new_file(custom_vals.LB0_PATH['f026'],f026_lb)
 
@@ -2223,6 +2454,12 @@ class Script_Modifier:
             assembler.label("PRIDER_FOUGHT",47),
             assembler.label("PRIDER_RAN",44)
         ]
+        if config_settings.menorah_groups: #Remove candelabra if randomized
+            del f027_16_insts[33:35]
+            f027_16_labels = [
+                assembler.label("PRIDER_FOUGHT",45),
+                assembler.label("PRIDER_RAN",42)
+            ]
         f027_obj.changeProcByIndex(f027_16_insts, f027_16_labels, f027_16_proc)
 
         f027_prider_callback_str = "PR_CB"
@@ -2256,6 +2493,27 @@ class Script_Modifier:
         ]
         f027_obj.appendProc(f027_bfrost_rwms_insts, [], f027_bfrost_callback_str)
         self.insert_callback('f027',0x1ddc,f027_bfrost_callback_str)
+        
+        #Black frost hint message
+        f027_obj.changeMessageByIndex(assembler.message("> You sense ^r"+self.get_checks_boss_name("Black Frost",world)+"^p^nbeyond the door.^n^x> Will you enter?" ,"F027_DOOR01"),0x4e)        
+
+        #Remove white rider from Asakusa always
+        f027_rider_flame_proc = f027_obj.getProcIndexByLabel("001_w_rider")
+        f027_rider_flame_insts, f027_rider_flame_labels = f027_obj.getProcInstructionsLabelsByIndex(f027_rider_flame_proc)
+        f027_rider_flame_insts[6] = inst("PUSHIS",0x113) #Switch flag to pale rider fought so it's never relevant
+        f027_obj.changeProcByIndex(f027_rider_flame_insts, f027_rider_flame_labels, f027_rider_flame_proc)
+        f027_rider_fight1_proc = f027_obj.getProcIndexByLabel("001_01eve_01")
+        f027_rider_fight1_insts, f027_rider_fight1_labels = f027_obj.getProcInstructionsLabelsByIndex(f027_rider_fight1_proc)
+        f027_rider_fight1_insts[1] = inst("PUSHIS",0x113) #Switch flag to pale rider fought so it's never relevant
+        f027_obj.changeProcByIndex(f027_rider_fight1_insts, f027_rider_fight1_labels, f027_rider_fight1_proc)
+        f027_rider_fight2_proc = f027_obj.getProcIndexByLabel("001_01eve_02")
+        f027_rider_fight2_insts, f027_rider_fight2_labels = f027_obj.getProcInstructionsLabelsByIndex(f027_rider_fight2_proc)
+        f027_rider_fight2_insts[1] = inst("PUSHIS",0x113) #Switch flag to pale rider fought so it's never relevant
+        f027_obj.changeProcByIndex(f027_rider_fight2_insts, f027_rider_fight2_labels, f027_rider_fight2_proc)
+        f027_rider_fight3_proc = f027_obj.getProcIndexByLabel("001_01eve_03") #There are 3 Asakusa rider battles because why?
+        f027_rider_fight3_insts, f027_rider_fight3_labels = f027_obj.getProcInstructionsLabelsByIndex(f027_rider_fight3_proc)
+        f027_rider_fight3_insts[1] = inst("PUSHIS",0x113) #Switch flag to pale rider fought so it's never relevant
+        f027_obj.changeProcByIndex(f027_rider_fight3_insts, f027_rider_fight3_labels, f027_rider_fight3_proc)
 
         f027_lb = self.push_bf_into_lb(f027_obj,'f027')
         self.dds3.add_new_file(custom_vals.LB0_PATH['f027'],f027_lb)
@@ -2300,8 +2558,11 @@ class Script_Modifier:
 
         #Bishamonten scene f039
         f039_obj = self.get_script_obj_by_name('f039')
+        f039_obj.changeNameByLookup("Bishamon", self.get_checks_boss_name("Bishamon 1",world, immersive=True))
         f039_obj.changeMessageByIndex(assembler.message("Well done.","SHORTER_B_TEXT"),0x11)
         f039_obj.changeMessageByIndex(assembler.message(self.get_reward_str("Bishamon 1",world),"BISHA_REWARD"),0x13)
+        f039_obj.changeMessageByIndex(assembler.message("> Do you accept "+self.get_checks_boss_name("Bishamon 1",world, immersive=True)+"'s^nchallenge?","f039_BOSS01_03"),0xd)
+        f039_obj.changeMessageByIndex(assembler.message("> "+self.get_checks_boss_name("Bishamon 1",world, immersive=True)+" disappeared.","BOSS03"),0x16)
         f039_rwms_proc = f039_obj.getProcIndexByLabel('039_B_AFTER')
         f039_rwms_insts, f039_rwms_labels = f039_obj.getProcInstructionsLabelsByIndex(f039_rwms_proc)
 
@@ -2312,10 +2573,10 @@ class Script_Modifier:
             inst("COMM",8),
             inst("PUSHIS",0x3f3), #Red Key (testing purposes)
             inst("COMM",8),   
-        ]
+        ]#Insert these if Bishamon should be a backup for softlocks
 
-        f039_rwms_insts = f039_rwms_insts[0:2] + f039_keys_insts + f039_rwms_insts[2:-1] + self.get_flag_reward_insts("Bishamon 1",world) + [inst("END")]
         f039_rwms_insts[23] = inst("PUSHIS",self.get_checks_boss_id("Bishamon 1",world))
+        f039_rwms_insts = f039_rwms_insts[0:2] + self.get_flag_reward_insts("Bishamon 1",world) + f039_rwms_insts[2:-1] + [inst("END")]
         f039_obj.changeProcByIndex(f039_rwms_insts,[],f039_rwms_proc) #No labels in the proc
         f039_02_proc = f039_obj.getProcIndexByLabel("002_start")
         f039_02_insts, f039_02_labels = f039_obj.getProcInstructionsLabelsByIndex(f039_02_proc)
@@ -2343,14 +2604,15 @@ class Script_Modifier:
         #Insert callback for reward message. 0xf68
         #Fight Futomimi always.
         f035_obj = self.get_script_obj_by_name('f035')
+        
+        f035_09_index = f035_obj.getProcIndexByLabel('009_01eve_01')
+        f035_09_insts, f035_09_labels = f035_obj.getProcInstructionsLabelsByIndex(f035_09_index)
         f035_futomimi_insert_insts = [
             inst("PUSHIS",0x56),
             inst("COMM",8),
             inst("PUSHIS",0x2a2), #0x2a1 is archangels
             inst("COMM",0x67)
         ]
-        f035_09_index = f035_obj.getProcIndexByLabel('009_01eve_01')
-        f035_09_insts, f035_09_labels = f035_obj.getProcInstructionsLabelsByIndex(f035_09_index)
         precut = 156
         postcut = 158
         diff = postcut-precut
@@ -2359,6 +2621,8 @@ class Script_Modifier:
                 l.label_offset -= diff
                 l.label_offset += len(f035_futomimi_insert_insts)
         f035_09_insts = f035_09_insts[:precut] + f035_futomimi_insert_insts + f035_09_insts[postcut:]
+        if config_settings.open_yurakucho: #Use flag that we know is off until after both fights
+            f035_09_insts[109] = inst("PUSHIS",0x81)
         f035_obj.changeProcByIndex(f035_09_insts, f035_09_labels, f035_09_index)
 
         #f035_angel_rwms_index = f035_obj.appendMessage(self.get_reward_str("Archangels",world),"ANGEL_REWARD")
@@ -2376,38 +2640,54 @@ class Script_Modifier:
         #f035_angel_callback_str = "ANGEL_CB"
         #f035_obj.appendProc(f035_angel_rwms_insts, [], f035_angel_callback_str)
         
+        #Futomimi/Archangels hint
+        f035_obj.changeMessageByIndex(assembler.message("> The mirror's reflection shows^n^r"+self.get_checks_boss_name("Futomimi",world)+"^p and ^r"+self.get_checks_boss_name("Archangels",world)+"^p.^n^x> Will you step into the light?" ,"HIKARI"),0xa)        
 
 
         f035_futomimi_rwms_index = f035_obj.appendMessage(self.get_reward_str("Futomimi",world),"FUTO_RWMS")
+        f035_angel_rwms_index = f035_obj.appendMessage(self.get_reward_str("Archangels",world),"ANGE_RWMS")
         f035_futomimi_callback_insts = [
             inst("PROC",len(f035_obj.p_lbls().labels)),
+            inst("PUSHIS",0x0),
+            inst("PUSHIS",0x81), #Use Agree with Chiaki flag because it is not needed elsewhere
+            inst("COMM",0x7),
+            inst("PUSHREG"),
+            inst("EQ"),
+            inst("IF", 0),
             inst("COMM",0x60),
             inst("COMM",1),
             inst("PUSHIS",f035_futomimi_rwms_index),
             inst("COMM",0),
             inst("COMM",2),
-            #inst("COMM",1),
-            #inst("PUSHIS",f035_angel_rwms_index), #adds archangels reward message to the same place
-            #inst("COMM",0),
-            #inst("COMM",2),
             
         ] + self.get_flag_reward_insts("Futomimi",world) + [
             inst("COMM",0x61),
-            
-            inst("PUSHIS",673),#Should work???
-            inst("PUSHIS",0x2a1),#This is awkward, but it is the best I can do for now. Archangels are boss rush after futomimi
-            inst("COMM",0x28),
-            inst("END"),
-            inst("PUSHIS",673),
-            #inst("PUSHIS",27),
+            inst("PUSHIS", 0x81),
+            inst("COMM", 0x8),
+            inst("PUSHIS",0x2be),
+            inst("PUSHIS",0x23), #Set a callback to self but check the Chiaki agree flag to prevent an infinite loop
             inst("PUSHIS",1),
             inst("COMM",0x97),
-            inst("COMM",0x23),
-            inst("COMM",0x2e),
+            inst("PUSHIS",0x2a1),#This is awkward, but it is the best I can do for now. Archangels are boss rush after futomimi
+            inst("COMM",0x67),
+            inst("END"),
+            
+            inst("COMM",0x60), #If this is after the angel fight, show the reward message and exit
+            inst("COMM",1),
+            inst("PUSHIS",f035_angel_rwms_index),
+            inst("COMM",0),
+            inst("COMM",2),
+            inst("COMM",0x61),
+            #inst("PUSHIS", 0x81), If anything is wierd because agree with chiaki is on, uncomment this
+            #inst("COMM", 0x9),
+        ] + self.get_flag_reward_insts("Archangels",world) + [
             inst("END")
         ]
+        f035_futomimi_callback_labels = [
+            assembler.label("ANGEL_FOUGHT",22 + len(self.get_flag_reward_insts("Futomimi",world)))
+        ]
         f035_futomimi_callback_str = "FUTO_CB"
-        f035_obj.appendProc(f035_futomimi_callback_insts,[],f035_futomimi_callback_str)
+        f035_obj.appendProc(f035_futomimi_callback_insts,f035_futomimi_callback_labels,f035_futomimi_callback_str)
         f035_lb = self.push_bf_into_lb(f035_obj, 'f035')
         self.dds3.add_new_file(custom_vals.LB0_PATH['f035'], f035_lb)
         self.insert_callback('f035',0xf68,f035_futomimi_callback_str)
@@ -2425,6 +2705,17 @@ class Script_Modifier:
         f031_rwms_insts, f031_rwms_labels = f031_obj.getProcInstructionsLabelsByIndex(f031_rwms_proc)
         f031_rwms_insts = f031_rwms_insts[:-1] + self.get_flag_reward_insts("Sisters",world) + [inst("END")]
         f031_obj.changeProcByIndex(f031_rwms_insts,[],f031_rwms_proc)
+        
+        f031_sisters_proc = f031_obj.getProcIndexByLabel("012_start") #Change sisters models to new boss and add hint message
+        f031_sisters_insts, f031_sisters_labels = f031_obj.getProcInstructionsLabelsByIndex(f031_sisters_proc)
+        f031_sisters_insts[100] = inst("PUSHIS",self.get_checks_boss_id("Sisters",world))
+        f031_sisters_insts[112] = inst("PUSHIS",self.get_checks_boss_id("Sisters",world, index=2))
+        f031_sisters_insts[124] = inst("PUSHIS",self.get_checks_boss_id("Sisters",world, index=1))
+        f031_obj.changeProcByIndex(f031_sisters_insts, f031_sisters_labels, f031_sisters_proc)
+        f031_obj.changeMessageByIndex(assembler.message("> You sense ^r"+self.get_checks_boss_name("Sisters",world)+"^p^non the floor above.^n^x> Will you go up?" ,"BOSS_ROOM_IN"),0x32)        
+        f031_obj.changeNameByLookup("Clotho", self.get_checks_boss_name("Sisters",world, immersive=True))
+        f031_obj.changeNameByLookup("Lachesis", self.get_checks_boss_name("Sisters",world, immersive=True))
+        f031_obj.changeNameByLookup("Atropos", self.get_checks_boss_name("Sisters",world, immersive=True))
         
         f031_lb = self.push_bf_into_lb(f031_obj,'f031')
         self.dds3.add_new_file(custom_vals.LB0_PATH['f031'],f031_lb)
@@ -2810,6 +3101,8 @@ class Script_Modifier:
         ]
         f016_gary_reward_proc_str = "GARY_CB"
         f016_obj.appendProc(f016_gary_reward_insts, [], f016_gary_reward_proc_str)
+        #Gary hint
+        f016_obj.changeMessageByIndex(assembler.message("> You sense ^r"+self.get_checks_boss_name("Girimehkala",world)+"^p^nbeyond the door.^n^x> Will you enter?" ,"F016_DOOR01"),0x8a)        
 
         f016_mh_proc = f016_obj.getProcIndexByLabel('019_mother')
         f016_mh_insts, f016_mh_labels = f016_obj.getProcInstructionsLabelsByIndex(f016_mh_proc)
@@ -2868,6 +3161,12 @@ class Script_Modifier:
             assembler.label("HARLOT_FOUGHT",43),
             assembler.label("HARLOT_RAN",40)
         ]
+        if config_settings.menorah_groups: #Remove candelabra if randomized
+            del f016_19_insts[29:31]
+            f016_19_labels = [
+                assembler.label("HARLOT_FOUGHT",41),
+                assembler.label("HARLOT_RAN",38)
+            ]
         f016_obj.changeProcByIndex(f016_19_insts, f016_19_labels, f016_19_proc)
 
         f016_harlot_callback_str = "HARLOT_CB"
@@ -2887,6 +3186,12 @@ class Script_Modifier:
         self.insert_callback('f016',0xf4,f016_harlot_callback_str)
 
         f016_obj.changeMessageByIndex(assembler.message("You sense the presence of^n^r"+self.get_checks_boss_name("The Harlot",world)+"^p.","FIRE_YURE"),0x4a)
+
+        #Golden goblet hint
+        f016_demon_name_id = f016_obj.sections[3].messages[0x98].name_id
+        f016_demon_message = assembler.message("I want a golden goblet!^n^xI hear you can find one^nat ^g"+self.get_flag_reward_location_string(0x3f5,world)+"^p.","F016_DEVIL03")
+        f016_demon_message.name_id = f016_demon_name_id
+        f016_obj.changeMessageByIndex(f016_demon_message,0x98)
 
         f016_lb = self.push_bf_into_lb(f016_obj,'f016')
         self.dds3.add_new_file(custom_vals.LB0_PATH['f016'],f016_lb)
@@ -2914,6 +3219,13 @@ class Script_Modifier:
         ]
         f030_obj.appendProc(f030_specter3_rwms_insts, [], f030_specter3_callback_str)
         self.insert_callback('f030',0xf4,f030_specter3_callback_str)
+        
+        f030_specter_proc = f030_obj.getProcIndexByLabel("002_01eve_01") #Change specter model to new boss
+        f030_specter_insts, f030_specter_labels = f030_obj.getProcInstructionsLabelsByIndex(f030_specter_proc)
+        f030_specter_insts[23] = inst("PUSHIS",self.get_checks_boss_id("Specter 3",world))
+        f030_specter_insts[129] = inst("PUSHIS",4) #Change crashing animation to "spell"
+        f030_obj.changeProcByIndex(f030_specter_insts, f030_specter_labels, f030_specter_proc)
+        f030_obj.changeNameByLookup("Specter", self.get_checks_boss_name("Specter 3",world, immersive=True))
         
         f030_lb = self.push_bf_into_lb(f030_obj,'f030')
         self.dds3.add_new_file(custom_vals.LB0_PATH['f030'],f030_lb)
@@ -3138,6 +3450,24 @@ class Script_Modifier:
         f034_10_start_insts, f034_10_start_labels = f034_obj.getProcInstructionsLabelsByIndex(f034_10_start_proc)
         f034_10_start_insts[96] = inst("PUSHIS",f034_aciel_hint_msg)
         f034_obj.changeProcByIndex(f034_10_start_insts, f034_10_start_labels, f034_10_start_proc)
+        
+        f034_aciel_proc = f034_obj.getProcIndexByLabel("010_01eve_01") #Change aciel model to new boss
+        f034_aciel_insts, f034_aciel_labels = f034_obj.getProcInstructionsLabelsByIndex(f034_aciel_proc)
+        f034_aciel_insts[55] = inst("PUSHIS",self.get_checks_boss_id("Aciel",world))
+        f034_obj.changeProcByIndex(f034_aciel_insts, f034_aciel_labels, f034_aciel_proc)
+        f034_obj.changeNameByLookup("Aciel", self.get_checks_boss_name("Aciel",world, immersive=True))
+        
+        f034_skadi_proc = f034_obj.getProcIndexByLabel("018_01eve_01") #Change skadi model to new boss
+        f034_skadi_insts, f034_skadi_labels = f034_obj.getProcInstructionsLabelsByIndex(f034_skadi_proc)
+        f034_skadi_insts[55] = inst("PUSHIS",self.get_checks_boss_id("Skadi",world))
+        f034_obj.changeProcByIndex(f034_skadi_insts, f034_skadi_labels, f034_skadi_proc)
+        f034_obj.changeNameByLookup("Skadi", self.get_checks_boss_name("Skadi",world, immersive=True))
+        
+        f034_albion_proc = f034_obj.getProcIndexByLabel("025_01eve_01") #Change albion model to new boss
+        f034_albion_insts, f034_albion_labels = f034_obj.getProcInstructionsLabelsByIndex(f034_albion_proc)
+        f034_albion_insts[57] = inst("PUSHIS",self.get_checks_boss_id("Albion",world))
+        f034_obj.changeProcByIndex(f034_albion_insts, f034_albion_labels, f034_albion_proc)
+        f034_obj.changeNameByLookup("Albion", self.get_checks_boss_name("Albion",world, immersive=True))
 
         #Center temple: 1st scene sets 0x864 and 0x52. 0x51 is the check. Keeping 0x51 set is probably safe.
         #   2nd scene checks 0x73. We want it to check Pyramidion instead.
@@ -3145,6 +3475,9 @@ class Script_Modifier:
         f034_03_01_insts, f034_03_01_labels = f034_obj.getProcInstructionsLabelsByIndex(f034_03_01_proc)
         f034_03_01_insts[61] = inst("PUSHIS",0x3da) #Change flag check to key item (Himorogi)
         f034_obj.changeProcByIndex(f034_03_01_insts, f034_03_01_labels, f034_03_01_proc)
+        
+        #Pyramidion hint
+        f034_obj.changeMessageByIndex(assembler.message("> What you seek is at^n^g"+self.get_flag_reward_location_string(0x3da,world)+"^p.","CENTER_DONE"),0x26)
 
         #Swap out Markro's INF.
         #Black Temple - Checks flag 0x03C0
@@ -3192,7 +3525,14 @@ class Script_Modifier:
             self.script_debug_out(f034_obj,'f034.bf')
 
         e703_obj = self.get_script_obj_by_name('e703')
-        e703_msg = e703_obj.appendMessage("The Tower of Kagutsuchi has been lowered onto the Obelisk.^n"+self.get_checks_boss_name("Kagutsuchi",world)+" awaits!","TOK_LOWERED")
+        e703_msg = e703_obj.appendMessage("The Tower of ^r"+self.get_checks_boss_name("Kagutsuchi",world)+"^p has been lowered onto the Obelisk.^nThe Labyrinth of Amala is now closed.","TOK_LOWERED")
+        ending_flag = 0x95 #Freedom
+        if config_settings.yosuga:
+            ending_flag = 0x91
+        elif config_settings.shijima:
+            ending_flag = 0x92
+        elif config_settings.musubi:
+            ending_flag = 0x93
         e703_insts = [
             inst("PROC",0),
             inst("PUSHIS",0x10),
@@ -3206,10 +3546,21 @@ class Script_Modifier:
             inst("COMM",8),
             inst("PUSHIS",0x4e2), #Unlock Nihilo Marunochi Terminal
             inst("COMM",8),
+            inst("PUSHIS", ending_flag),
+            inst("COMM",8),
             inst("COMM",0x23),#FLD_EVENT_END2
             inst("COMM",0x2e),
             inst("END")
         ]
+        e703_TDE_insts = [
+            inst("PUSHIS",0x126),
+            inst("COMM",8),
+            inst("PUSHIS",0x8c1),
+            inst("COMM",8),
+        ]
+        if config_settings.fight_lucifer:
+            e703_insts = e703_insts[:-3] + e703_TDE_insts + e703_insts[-3:]    
+
         e703_obj.changeProcByIndex(e703_insts,[],0)
         self.dds3.add_new_file(custom_vals.SCRIPT_OBJ_PATH['e703'], BytesIO(bytes(e703_obj.toBytes())))
 
@@ -3269,6 +3620,12 @@ class Script_Modifier:
             assembler.label("TOOT_RAN",40),
             assembler.label("TOOT_FOUGHT",37)
         ]
+        if config_settings.menorah_groups: #Remove candelabra if randomized
+            del f021_toot_insts[26:28]
+            f021_toot_labels = [
+                assembler.label("TOOT_RAN",38),
+                assembler.label("TOOT_FOUGHT",35)
+            ]
         f021_obj.changeProcByIndex(f021_toot_insts,f021_toot_labels,f021_toot_proc)
 
         f021_toot_rwms = f021_obj.appendMessage(self.get_reward_str("Trumpeter",world),"TOOT_RWMS")
@@ -3288,7 +3645,7 @@ class Script_Modifier:
         self.insert_callback('f021', 0xf4, f021_toot_reward_proc_str)
 
         f021_obj.changeMessageByIndex(assembler.message("You sense the presence of^n^r"+self.get_checks_boss_name("Trumpeter",world)+"^p.","FIRE_YURE"),0x38)
-        f021_obj.changeMessageByIndex(assembler.message("At the Northern Temple,^nyou can get back lost keys^nwith this Kimon Stone I found.^nCheck it out if one of your^ntemple keys failed to drop!^n^xIt's just a backup though.^nDon't use it to cheat.","SIGE_04"),0x14)
+        #f021_obj.changeMessageByIndex(assembler.message("At the Northern Temple,^nyou can get back lost keys^nwith this Kimon Stone I found.^nCheck it out if one of your^ntemple keys failed to drop!^n^xIt's just a backup though.^nDon't use it to cheat.","SIGE_04"),0x14) If bishamon drops all 3 keys use this
 
         f021_lb = self.push_bf_into_lb(f021_obj, 'f021')
         self.dds3.add_new_file(custom_vals.LB0_PATH['f021'], f021_lb)
@@ -3330,7 +3687,34 @@ class Script_Modifier:
         f033_surt_reward_proc_str = "SURT_CB"
         f033_obj.appendProc(f033_surt_rwms_insts,[],f033_surt_reward_proc_str)
         self.insert_callback('f033', 0x37a4, f033_surt_reward_proc_str)
+        
+        #Diet building hints
+        f033_obj.changeMessageByIndex(assembler.message("> There is a statue of ^r"+self.get_checks_boss_name("Surt",world)+"^p." ,"F033_DOZO01_02"),0x57)
+        
+        f033_surt_name_id = f033_obj.sections[3].messages[0x3].name_id
+        f033_surt_message = assembler.message("I am the guardian of this building.^n^xThou shan't reach ^r"+self.get_checks_boss_name("Mada",world)+"^p." ,"ITAGAKI_DOUZOU_1")
+        f033_surt_message.name_id = f033_surt_name_id
+        f033_obj.changeMessageByIndex(f033_surt_message,0x3)
+        
+        f033_mada_name_id = f033_obj.sections[3].messages[0x7].name_id
+        f033_mada_message = assembler.message("...But, I cannot let you get to^n^r"+self.get_checks_boss_name("Mot",world)+"^p.^n^xThe Magatsuhi in this building is^nalready ours.^n^xAll we have to do now is summon^nour god, and we will receive^nthe Reason of Shijima!^nI will not allow you to meddle with^nour commander.^n^xI, "+self.get_checks_boss_name("Mada",world, immersive=True)+", will personally hand you^na ticket to hell!" ,"OOKUMA_DOUZOU")
+        f033_mada_message.name_id = f033_mada_name_id
+        f033_obj.changeMessageByIndex(f033_mada_message,0x7)
+        
+        f033_mot_name_id = f033_obj.sections[3].messages[0x1b].name_id
+        f033_mot_message = assembler.message("Curse thee...^n^xCurse thee, knave...!^n^xI shall smite thee down myself!^n^xThou shan't see^n^r"+self.get_checks_boss_name("Mithra",world)+"^p nor ^r"+self.get_checks_boss_name("Samael",world)+"^p!" ,"MITUKETANODA")
+        f033_mot_message.name_id = f033_mot_name_id
+        f033_obj.changeMessageByIndex(f033_mot_message,0x1b)
 
+        f033_mot_proc = f033_obj.getProcIndexByLabel("024_moto_on") #Change mot model to new boss
+        f033_mot_insts, f033_mot_labels = f033_obj.getProcInstructionsLabelsByIndex(f033_mot_proc)
+        f033_mot_insts[12] = inst("PUSHIS",self.get_checks_boss_id("Mot",world))
+        f033_mot_insts[38] = inst("PUSHIS",self.get_checks_boss_id("Mot",world))
+        f033_mot_insts[64] = inst("PUSHIS",self.get_checks_boss_id("Mot",world))
+        f033_mot_insts[90] = inst("PUSHIS",self.get_checks_boss_id("Mot",world)) #mot is loaded 4 times, unsure which is correct
+        f033_obj.changeProcByIndex(f033_mot_insts, f033_mot_labels, f033_mot_proc)
+        f033_obj.changeNameByLookup("Mot", self.get_checks_boss_name("Mot",world, immersive=True))
+        
         f033_mada_rwms = f033_obj.appendMessage(self.get_reward_str("Mada",world),"MADA_RWMS")
         f033_mada_rwms_insts = [
             inst("PROC",len(f033_obj.p_lbls().labels)),
@@ -3384,8 +3768,16 @@ class Script_Modifier:
         f033_29_labels = [
             assembler.label("MITHRA_FOUGHT",17)
         ]
+
         f033_obj.changeProcByIndex(f033_29_insts, f033_29_labels, f033_29_proc)
         f033_obj.changeMessageByIndex(assembler.message(self.get_reward_str("Mithra",world),"MITHRA_REWARD"),0x2d)
+        
+        f033_29_start_proc = f033_obj.getProcIndexByLabel('029_start') #Mithra reward, DELETE if doesn't work right
+        f033_29_start_insts, f033_29_start_labels = f033_obj.getProcInstructionsLabelsByIndex(f033_29_start_proc)
+        f033_29_start_insts = f033_29_start_insts[0:28] + self.get_flag_reward_insts("Mithra",world) + f033_29_start_insts[28:]
+        f033_29_start_labels[0].label_offset = f033_29_start_labels[0].label_offset + len(self.get_flag_reward_insts("Mithra",world))
+        f033_29_start_labels[1].label_offset = f033_29_start_labels[1].label_offset + len(self.get_flag_reward_insts("Mithra",world))
+        f033_obj.changeProcByIndex(f033_29_start_insts, f033_29_start_labels, f033_29_start_proc)
 
         f033_samael_rwms = f033_obj.appendMessage(self.get_reward_str("Samael",world),"SAMAEL_RWMS")
         f033_samael_rwms_insts = [
@@ -3473,12 +3865,24 @@ class Script_Modifier:
             inst("COMM",0x2e),
             inst("END")
         ]
-        e681_obj.changeProcByIndex(e681_insts,[],0)
-        self.dds3.add_new_file(custom_vals.SCRIPT_OBJ_PATH['e681'], BytesIO(bytes(e681_obj.toBytes())))
+        if not config_settings.shijima: #Don't fight Ahriman in Shijima
+           e681_obj.changeProcByIndex(e681_insts,[],0)
+           self.dds3.add_new_file(custom_vals.SCRIPT_OBJ_PATH['e681'], BytesIO(bytes(e681_obj.toBytes())))
         #Could probably blank out e678
 
         if SCRIPT_DEBUG:
             self.script_debug_out(e681_obj,'e681.bf')
+
+        f032_obj = self.get_script_obj_by_name('f032')
+        
+        #Ahriman hint
+        f032_obj.changeMessageByIndex(assembler.message("I saw an incredible demon up ahead.^nIt's big! It's red!^n^xIt's ^r"+self.get_checks_boss_name("Ahriman",world)+"^p!" ,"F032_MANE07"),0x76)
+        
+        f032_lb = self.push_bf_into_lb(f032_obj, 'f032')
+        self.dds3.add_new_file(custom_vals.LB0_PATH['f032'], f032_lb)
+            
+        if SCRIPT_DEBUG:
+            self.script_debug_out(f032_obj,'f032.bf')
 
         #Cutscene removal in ToK2 f036
         #Shorten Noah
@@ -3506,8 +3910,9 @@ class Script_Modifier:
             inst("COMM",0x2e),
             inst("END")
         ]
-        e680_obj.changeProcByIndex(e680_insts,[],0)
-        self.dds3.add_new_file(custom_vals.SCRIPT_OBJ_PATH['e680'], BytesIO(bytes(e680_obj.toBytes())))
+        if not config_settings.musubi: #Don't fight Noah in Musubi
+            e680_obj.changeProcByIndex(e680_insts,[],0)
+            self.dds3.add_new_file(custom_vals.SCRIPT_OBJ_PATH['e680'], BytesIO(bytes(e680_obj.toBytes())))
 
         if SCRIPT_DEBUG:
             self.script_debug_out(e680_obj,'e680.bf')
@@ -3530,6 +3935,10 @@ class Script_Modifier:
         f036_13_labels[0].label_str = "_13_START_LABEL"
         f036_13_insts[0] = inst("PROC",len(f036_obj.p_lbls().labels))
         f036_obj.appendProc(f036_13_insts, f036_13_labels, "013_start")
+        
+        #Noah hint
+        if not config_settings.vanilla_tok:
+            f036_obj.changeMessageByIndex(assembler.message("............^n^xI see......^n^xThen, go in. ^r"+self.get_checks_boss_name("Noah",world)+"^p^nis waiting..." ,"F036_SINEN03_YES"),0x32)
 
         f036_lb = self.push_bf_into_lb(f036_obj, 'f036')
         self.dds3.add_new_file(custom_vals.LB0_PATH['f036'], f036_lb)
@@ -3603,12 +4012,720 @@ class Script_Modifier:
         f037_23_insts[2] = inst("PUSHIS",0xa34)
         f037_23_insts[47] = inst("PUSHIS",0xa34)
         f037_obj.changeProcByIndex(f037_23_insts, f037_23_labels, f037_23_proc)
+        
+        #Thor 2 hint and reward message
+        f037_obj.changeMessageByIndex(assembler.message("You can see ^r"+self.get_checks_boss_name("Thor 2",world)+"^p^nat the end of the hall." ,"THOR00"),0x2)
+        f037_thor_name_id = f037_obj.sections[3].messages[0x5].name_id
+        f037_thor_message = assembler.message("...I am ^r"+self.get_checks_boss_name("Thor 2",world, immersive=True)+"^p. Our paths have not^ncrossed since the fall of the Mantra." ,"THOR03")
+        f037_thor_message.name_id = f037_thor_name_id
+        f037_obj.changeMessageByIndex(f037_thor_message,0x5)
+        f037_obj.changeMessageByIndex(assembler.message(self.get_reward_str("Thor 2",world),"THOR04"),0x10)
+        
+        f037_thorafter_proc = f037_obj.getProcIndexByLabel("007_THOR_AFTER") #Change Thor 2 model to new boss before and after fight
+        f037_thorafter_insts, f037_thorafter_labels = f037_obj.getProcInstructionsLabelsByIndex(f037_thorafter_proc)
+        f037_thorafter_insts[8] = inst("PUSHIS",self.get_checks_boss_id("Thor 2",world))
+        f037_obj.changeProcByIndex(f037_thorafter_insts, f037_thorafter_labels, f037_thorafter_proc)
+        
+        if not config_settings.vanilla_tok:
+            f037_thor_proc = f037_obj.getProcIndexByLabel("007_01eve_05") #model is loaded differently here, beware of explosion
+            f037_thor_insts, f037_thor_labels = f037_obj.getProcInstructionsLabelsByIndex(f037_thor_proc)
+            f037_thor_insts[18] = inst("PUSHIS",self.get_checks_boss_id("Thor 2",world))
+            f037_thor_insts[19] = inst("PUSHIS",6) #Same number as other model loads
+            f037_obj.changeProcByIndex(f037_thor_insts, f037_thor_labels, f037_thor_proc)
+        
+        f037_obj.changeNameByLookup("Thor", self.get_checks_boss_name("Thor 2",world, immersive=True))
+        
+        #Baal hint for normal and Yosuga
+        if not config_settings.vanilla_tok:
+            f037_dominion_name_id = f037_obj.sections[3].messages[0x4d].name_id
+            f037_dominion_message1 = assembler.message("If it isn't the Demi-fiend...^n^xWe've been waiting for you,^nand that stone you have in^nyour hands.^xLady ^r"+self.get_checks_boss_name("Baal Avatar",world)+"^p is waiting for^nyou up ahead. Please go on through." ,"F037_DEVIL03_01")
+            f037_dominion_message1.name_id = f037_dominion_name_id
+            f037_obj.changeMessageByIndex(f037_dominion_message1,0x4d)
+            f037_dominion_message2 = assembler.message("If it isn't the Demi-fiend...^n^xI'm surprised you have the nerve to^neven see us!^n^xLady ^r"+self.get_checks_boss_name("Baal Avatar",world)+"^p^nis up ahead.^n^xYosuga shall take that stone^nyou have in your hands.^n...And your life." ,"F037_DEVIL03_02")
+            f037_dominion_message2.name_id = f037_dominion_name_id
+            f037_obj.changeMessageByIndex(f037_dominion_message2,0x4e)
 
         f037_lb = self.push_bf_into_lb(f037_obj, 'f037')
         self.dds3.add_new_file(custom_vals.LB0_PATH['f037'], f037_lb)
 
         if SCRIPT_DEBUG:
             self.script_debug_out(f037_obj,'f037.bf')
+           
+        f038_obj = self.get_script_obj_by_name('f038')
+        f038_zouchou_proc = f038_obj.getProcIndexByLabel("001_01eve_10") #Zoucho model swap
+        f038_zouchou_insts, f038_zouchou_labels = f038_obj.getProcInstructionsLabelsByIndex(f038_zouchou_proc)
+        f038_zouchou_insts[116] = inst("PUSHIS",self.get_checks_boss_id("Zouchou",world))
+        f038_obj.changeProcByIndex(f038_zouchou_insts, f038_zouchou_labels, f038_zouchou_proc)
+        f038_jikoku_proc = f038_obj.getProcIndexByLabel("001_01eve_11") #Jikoku model swap
+        f038_jikoku_insts, f038_jikoku_labels = f038_obj.getProcInstructionsLabelsByIndex(f038_jikoku_proc)
+        f038_jikoku_insts[116] = inst("PUSHIS",self.get_checks_boss_id("Jikoku",world))
+        f038_obj.changeProcByIndex(f038_jikoku_insts, f038_jikoku_labels, f038_jikoku_proc)
+        f038_koumoku_proc = f038_obj.getProcIndexByLabel("001_01eve_12") #Koumoku model swap
+        f038_koumoku_insts, f038_koumoku_labels = f038_obj.getProcInstructionsLabelsByIndex(f038_koumoku_proc)
+        f038_koumoku_insts[116] = inst("PUSHIS",self.get_checks_boss_id("Koumoku",world))
+        f038_obj.changeProcByIndex(f038_koumoku_insts, f038_koumoku_labels, f038_koumoku_proc)
+        f038_bishamon_proc = f038_obj.getProcIndexByLabel("001_01eve_13") #Bishamon model swap
+        f038_bishamon_insts, f038_bishamon_labels = f038_obj.getProcInstructionsLabelsByIndex(f038_bishamon_proc)
+        f038_bishamon_insts[116] = inst("PUSHIS",self.get_checks_boss_id("Bishamon 2",world))
+        f038_obj.changeProcByIndex(f038_bishamon_insts, f038_bishamon_labels, f038_bishamon_proc)
+        
+        f038_obj.changeNameByLookup("Zouchou", self.get_checks_boss_name("Zouchou",world, immersive=True))
+        f038_obj.changeNameByLookup("Jikoku", self.get_checks_boss_name("Jikoku",world, immersive=True))
+        f038_obj.changeNameByLookup("Koumoku", self.get_checks_boss_name("Koumoku",world, immersive=True))
+        f038_obj.changeNameByLookup("Bishamon", self.get_checks_boss_name("Bishamon 2",world, immersive=True))
+        
+        f038_lb = self.push_bf_into_lb(f038_obj, 'f038')
+        self.dds3.add_new_file(custom_vals.LB0_PATH['f038'], f038_lb)
+
+        if SCRIPT_DEBUG:
+            self.script_debug_out(f038_obj,'f038.bf')
+        
+        #LoA Kalpa Tunnel Skips
+        f040_obj = self.get_script_obj_by_name('f040')
+        f040_kalpa1_tunnel_proc = f040_obj.getProcIndexByLabel("001_01eve_02")
+        f040_kalpa1_tunnel_insts, f040_kalpa1_tunnel_labels = f040_obj.getProcInstructionsLabelsByIndex(f040_kalpa1_tunnel_proc)
+        f040_kalpa1_tunnel_insert_insts = [
+            inst("PUSHIS",0x3e9),
+            inst("PUSHIS",0x29),
+            inst("PUSHIS",0x1),
+            inst("COMM",0x97),
+            inst("PUSHIS",0x2c7), #Call a null event (LoA Lobby 2 Cutscene)
+            inst("COMM",0x66)
+        ]
+        f040_kalpa1_tunnel_insts = f040_kalpa1_tunnel_insts[0:64] + f040_kalpa1_tunnel_insert_insts + f040_kalpa1_tunnel_insts[66:-1] + [inst("END")]
+        for l in f040_kalpa1_tunnel_labels:
+            if l.label_offset > 64:
+                l.label_offset += 4
+        f040_obj.changeProcByIndex(f040_kalpa1_tunnel_insts, f040_kalpa1_tunnel_labels, f040_kalpa1_tunnel_proc)
+        
+        f040_kalpa2_tunnel_proc = f040_obj.getProcIndexByLabel("001_01eve_03")
+        f040_kalpa2_tunnel_insts, f040_kalpa2_tunnel_labels = f040_obj.getProcInstructionsLabelsByIndex(f040_kalpa2_tunnel_proc)
+        f040_kalpa2_tunnel_insert_insts = [
+            inst("PUSHIS",0x3eb),
+            inst("PUSHIS",0x2a),
+            inst("PUSHIS",0x1),
+            inst("COMM",0x97),
+            inst("PUSHIS",0x2c7), #Call a null event (LoA Lobby 2 Cutscene)
+            inst("COMM",0x66)
+        ]
+        f040_kalpa2_tunnel_insts = f040_kalpa2_tunnel_insts[0:64] + f040_kalpa2_tunnel_insert_insts + f040_kalpa2_tunnel_insts[66:-1] + [inst("END")]
+        for l in f040_kalpa2_tunnel_labels:
+            if l.label_offset > 64:
+                l.label_offset += 4
+        f040_obj.changeProcByIndex(f040_kalpa2_tunnel_insts, f040_kalpa2_tunnel_labels, f040_kalpa2_tunnel_proc)
+        
+        f040_kalpa3_tunnel_proc = f040_obj.getProcIndexByLabel("001_01eve_04")
+        f040_kalpa3_tunnel_insts, f040_kalpa3_tunnel_labels = f040_obj.getProcInstructionsLabelsByIndex(f040_kalpa3_tunnel_proc)
+        f040_kalpa3_tunnel_insert_insts = [
+            inst("PUSHIS",0x3ed),
+            inst("PUSHIS",0x2b),
+            inst("PUSHIS",0x1),
+            inst("COMM",0x97),
+            inst("PUSHIS",0x2c7), #Call a null event (LoA Lobby 2 Cutscene)
+            inst("COMM",0x66)
+        ]
+        f040_kalpa3_tunnel_insts = f040_kalpa3_tunnel_insts[0:64] + f040_kalpa3_tunnel_insert_insts + f040_kalpa3_tunnel_insts[66:-1] + [inst("END")]
+        for l in f040_kalpa3_tunnel_labels:
+            if l.label_offset > 64:
+                l.label_offset += 4
+        f040_obj.changeProcByIndex(f040_kalpa3_tunnel_insts, f040_kalpa3_tunnel_labels, f040_kalpa3_tunnel_proc)
+        
+        f040_kalpa4_tunnel_proc = f040_obj.getProcIndexByLabel("001_01eve_05")
+        f040_kalpa4_tunnel_insts, f040_kalpa4_tunnel_labels = f040_obj.getProcInstructionsLabelsByIndex(f040_kalpa4_tunnel_proc)
+        f040_kalpa4_tunnel_insert_insts = [
+            inst("PUSHIS",0x3ef),
+            inst("PUSHIS",0x2c),
+            inst("PUSHIS",0x1),
+            inst("COMM",0x97),
+            inst("PUSHIS",0x2c7), #Call a null event (LoA Lobby 2 Cutscene)
+            inst("COMM",0x66)
+        ]
+        f040_kalpa4_tunnel_insts = f040_kalpa4_tunnel_insts[0:64] + f040_kalpa4_tunnel_insert_insts + f040_kalpa4_tunnel_insts[66:-1] + [inst("END")]
+        for l in f040_kalpa4_tunnel_labels:
+            if l.label_offset > 64:
+                l.label_offset += 4
+        f040_obj.changeProcByIndex(f040_kalpa4_tunnel_insts, f040_kalpa4_tunnel_labels, f040_kalpa4_tunnel_proc)
+        
+        f040_kalpa5_tunnel_proc = f040_obj.getProcIndexByLabel("001_01eve_06")
+        f040_kalpa5_tunnel_insts, f040_kalpa5_tunnel_labels = f040_obj.getProcInstructionsLabelsByIndex(f040_kalpa5_tunnel_proc)
+        f040_kalpa5_tunnel_insert_insts = [
+            inst("PUSHIS",0x3f1),
+            inst("PUSHIS",0x2d),
+            inst("PUSHIS",0x1),
+            inst("COMM",0x97),
+            inst("PUSHIS",0x2c7), #Call a null event (LoA Lobby 2 Cutscene)
+            inst("COMM",0x66)
+        ]
+        f040_kalpa5_tunnel_insts = f040_kalpa5_tunnel_insts[0:64] + f040_kalpa5_tunnel_insert_insts + f040_kalpa5_tunnel_insts[66:-1] + [inst("END")]
+        for l in f040_kalpa5_tunnel_labels:
+            if l.label_offset > 64:
+                l.label_offset += 4
+        f040_obj.changeProcByIndex(f040_kalpa5_tunnel_insts, f040_kalpa5_tunnel_labels, f040_kalpa5_tunnel_proc)
+        
+        f040_lb = self.push_bf_into_lb(f040_obj, 'f040')
+        self.dds3.add_new_file(custom_vals.LB0_PATH['f040'], f040_lb)
+        
+        f041_obj = self.get_script_obj_by_name('f041')
+
+        f041_kalpa2_tunnel_proc = f041_obj.getProcIndexByLabel("002_01eve_02")
+        f041_kalpa2_tunnel_insts, f041_kalpa2_tunnel_labels = f041_obj.getProcInstructionsLabelsByIndex(f041_kalpa2_tunnel_proc)
+        f041_kalpa2_tunnel_insert_insts = [
+            inst("PUSHIS",0x3ea),
+            inst("PUSHIS",0x2a),
+            inst("PUSHIS",0x1),
+            inst("COMM",0x97),
+            inst("PUSHIS",0x2c7), #Call a null event (LoA Lobby 2 Cutscene)
+            inst("COMM",0x66)
+        ]
+        f041_kalpa2_tunnel_insts = f041_kalpa2_tunnel_insts[0:60] + f041_kalpa2_tunnel_insert_insts + f041_kalpa2_tunnel_insts[62:-1] + [inst("END")]
+        for l in f041_kalpa2_tunnel_labels:
+            if l.label_offset > 60:
+                l.label_offset += 4
+        f041_obj.changeProcByIndex(f041_kalpa2_tunnel_insts, f041_kalpa2_tunnel_labels, f041_kalpa2_tunnel_proc)
+        
+        f041_lobby_tunnel_proc = f041_obj.getProcIndexByLabel("001_01eve_02")
+        f041_lobby_tunnel_insts, f041_lobby_tunnel_labels = f041_obj.getProcInstructionsLabelsByIndex(f041_lobby_tunnel_proc)
+        f041_lobby_tunnel_insert_insts = [
+            inst("PUSHIS",0x3e9),
+            inst("PUSHIS",0x28),
+            inst("PUSHIS",0x1),
+            inst("COMM",0x97),
+            inst("PUSHIS",0x2c7), #Call a null event (LoA Lobby 2 Cutscene)
+            inst("COMM",0x66)
+        ]
+        f041_lobby_tunnel_insts = f041_lobby_tunnel_insts[0:60] + f041_lobby_tunnel_insert_insts + f041_lobby_tunnel_insts[62:-1] + [inst("END")]
+        for l in f041_lobby_tunnel_labels:
+            if l.label_offset > 60:
+                l.label_offset += 4
+        f041_obj.changeProcByIndex(f041_lobby_tunnel_insts, f041_lobby_tunnel_labels, f041_lobby_tunnel_proc)
+
+        f041_lb = self.push_bf_into_lb(f041_obj, 'f041')
+        self.dds3.add_new_file(custom_vals.LB0_PATH['f041'], f041_lb)
+        
+        f042_obj = self.get_script_obj_by_name('f042')
+
+        f042_kalpa1_tunnel_proc = f042_obj.getProcIndexByLabel("001_01eve_02")
+        f042_kalpa1_tunnel_insts, f042_kalpa1_tunnel_labels = f042_obj.getProcInstructionsLabelsByIndex(f042_kalpa1_tunnel_proc)
+        f042_kalpa1_tunnel_insert_insts = [
+            inst("PUSHIS",0x3ea),
+            inst("PUSHIS",0x29),
+            inst("PUSHIS",0x1),
+            inst("COMM",0x97),
+            inst("PUSHIS",0x2c7), #Call a null event (LoA Lobby 2 Cutscene)
+            inst("COMM",0x66)
+        ]
+        f042_kalpa1_tunnel_insts = f042_kalpa1_tunnel_insts[0:60] + f042_kalpa1_tunnel_insert_insts + f042_kalpa1_tunnel_insts[62:-1] + [inst("END")]
+        for l in f042_kalpa1_tunnel_labels:
+            if l.label_offset > 60:
+                l.label_offset += 4
+        f042_obj.changeProcByIndex(f042_kalpa1_tunnel_insts, f042_kalpa1_tunnel_labels, f042_kalpa1_tunnel_proc)
+        
+        f042_lobby_tunnel_proc = f042_obj.getProcIndexByLabel("001_01eve_03")
+        f042_lobby_tunnel_insts, f042_lobby_tunnel_labels = f042_obj.getProcInstructionsLabelsByIndex(f042_lobby_tunnel_proc)
+        f042_lobby_tunnel_insert_insts = [
+            inst("PUSHIS",0x3eb),
+            inst("PUSHIS",0x28),
+            inst("PUSHIS",0x1),
+            inst("COMM",0x97),
+            inst("PUSHIS",0x2c7), #Call a null event (LoA Lobby 2 Cutscene)
+            inst("COMM",0x66)
+        ]
+        f042_lobby_tunnel_insts = f042_lobby_tunnel_insts[0:60] + f042_lobby_tunnel_insert_insts + f042_lobby_tunnel_insts[62:-1] + [inst("END")]
+        for l in f042_lobby_tunnel_labels:
+            if l.label_offset > 60:
+                l.label_offset += 4
+        f042_obj.changeProcByIndex(f042_lobby_tunnel_insts, f042_lobby_tunnel_labels, f042_lobby_tunnel_proc)  
+        
+        f042_kalpa3_tunnel_proc = f042_obj.getProcIndexByLabel("002_01eve_02")
+        f042_kalpa3_tunnel_insts, f042_kalpa3_tunnel_labels = f042_obj.getProcInstructionsLabelsByIndex(f042_kalpa3_tunnel_proc)
+        f042_kalpa3_tunnel_insert_insts = [
+            inst("PUSHIS",0x3ec),
+            inst("PUSHIS",0x2b),
+            inst("PUSHIS",0x1),
+            inst("COMM",0x97),
+            inst("PUSHIS",0x2c7), #Call a null event (LoA Lobby 2 Cutscene)
+            inst("COMM",0x66)
+        ]
+        f042_kalpa3_tunnel_insts = f042_kalpa3_tunnel_insts[0:60] + f042_kalpa3_tunnel_insert_insts + f042_kalpa3_tunnel_insts[62:-1] + [inst("END")]
+        for l in f042_kalpa3_tunnel_labels:
+            if l.label_offset > 60:
+                l.label_offset += 4
+        f042_obj.changeProcByIndex(f042_kalpa3_tunnel_insts, f042_kalpa3_tunnel_labels, f042_kalpa3_tunnel_proc)
+        
+        #Apoc stone hint
+        f042_arahabaki_name_id = f042_obj.sections[3].messages[0x84].name_id
+        f042_arahabaki_message = assembler.message("The riders are not here.^n^xThey left while sayeth their stone^nis at ^g"+self.get_flag_reward_location_string(0x3f4,world)+"^p.","MSG_F42_A2_AKUMA01")
+        f042_arahabaki_message.name_id = f042_arahabaki_name_id
+        f042_obj.changeMessageByIndex(f042_arahabaki_message,0x84)
+        
+        if config_settings.menorah_groups: #Menorah hint
+            f042_obj.changeMessageByIndex(assembler.message("> Retrieve these candelabra^nfrom ^g"+self.get_flag_reward_location_string(0x3e7,world)+"^p.", "MSG_001_2"),0x6)
+            
+        f042_lb = self.push_bf_into_lb(f042_obj, 'f042')
+        self.dds3.add_new_file(custom_vals.LB0_PATH['f042'], f042_lb)
+        
+        #LoA peephole cutscene skips
+        e711_obj = self.get_script_obj_by_name('e711')
+        e711_main_proc = e711_obj.getProcIndexByLabel("e711_main")
+        e711_main_insts, e711_main_labels = e711_obj.getProcInstructionsLabelsByIndex(e711_main_proc)
+        e711_main_insts = [e711_main_insts[0]] + [
+            inst("PUSHIS",0x10b),
+            inst("COMM",0x8),
+            inst("COMM",0x23),
+            inst("COMM",0x2e),
+            inst("END")
+        ]
+        e711_obj.changeProcByIndex(e711_main_insts, [], e711_main_proc)
+        self.dds3.add_new_file(custom_vals.SCRIPT_OBJ_PATH['e711'], BytesIO(bytes(e711_obj.toBytes())))
+        
+        e712_obj = self.get_script_obj_by_name('e712')
+        e712_main_proc = e712_obj.getProcIndexByLabel("e712_main")
+        e712_main_insts, e712_main_labels = e712_obj.getProcInstructionsLabelsByIndex(e712_main_proc)
+        e712_main_insts = [e712_main_insts[0]] + [
+            inst("PUSHIS",0x10d),
+            inst("COMM",0x8),
+            inst("PUSHIS",0x10e),
+            inst("COMM",0x8),
+            inst("COMM",0x23),
+            inst("COMM",0x2e),
+            inst("END")
+        ]
+        e712_obj.changeProcByIndex(e712_main_insts, [], e712_main_proc)
+        self.dds3.add_new_file(custom_vals.SCRIPT_OBJ_PATH['e712'], BytesIO(bytes(e712_obj.toBytes())))
+        
+        e713_obj = self.get_script_obj_by_name('e713')
+        e713_main_proc = e713_obj.getProcIndexByLabel("e713_main")
+        e713_main_insts, e713_main_labels = e713_obj.getProcInstructionsLabelsByIndex(e713_main_proc)
+        e713_main_insts = [e713_main_insts[0]] + [
+            inst("PUSHIS",0x11a),
+            inst("COMM",0x8),
+            inst("COMM",0x23),
+            inst("COMM",0x2e),
+            inst("END")
+        ]
+        e713_obj.changeProcByIndex(e713_main_insts, [], e713_main_proc)
+        self.dds3.add_new_file(custom_vals.SCRIPT_OBJ_PATH['e713'], BytesIO(bytes(e713_obj.toBytes())))
+        
+        e714_obj = self.get_script_obj_by_name('e714')
+        e714_main_proc = e714_obj.getProcIndexByLabel("e714_main")
+        e714_main_insts, e714_main_labels = e714_obj.getProcInstructionsLabelsByIndex(e714_main_proc)
+        e714_main_insts = [e714_main_insts[0]] + [
+            inst("PUSHIS",0x11b),
+            inst("COMM",0x8),
+            inst("COMM",0x23),
+            inst("COMM",0x2e),
+            inst("END")
+        ]
+        e714_obj.changeProcByIndex(e714_main_insts, [], e714_main_proc)
+        self.dds3.add_new_file(custom_vals.SCRIPT_OBJ_PATH['e714'], BytesIO(bytes(e714_obj.toBytes())))
+        
+        e715_obj = self.get_script_obj_by_name('e715')
+        e715_main_proc = e715_obj.getProcIndexByLabel("e715_main")
+        e715_main_insts, e715_main_labels = e715_obj.getProcInstructionsLabelsByIndex(e715_main_proc)
+        e715_main_insts = [e715_main_insts[0]] + [
+            inst("PUSHIS",0x11c),
+            inst("COMM",0x8),
+            inst("PUSHIS",0x11e),
+            inst("COMM",0x8),
+            inst("COMM",0x23),
+            inst("COMM",0x2e),
+            inst("END")
+        ]
+        e715_obj.changeProcByIndex(e715_main_insts, [], e715_main_proc)
+        self.dds3.add_new_file(custom_vals.SCRIPT_OBJ_PATH['e715'], BytesIO(bytes(e715_obj.toBytes())))
+        
+        #Shorten Dante 2 Fight
+        e728_obj = self.get_script_obj_by_name('e728')
+        
+        e729_obj = self.get_script_obj_by_name('e729')
+        e729_main_proc = e729_obj.getProcIndexByLabel("e729_main")
+        e729_main_insts, e729_main_labels = e729_obj.getProcInstructionsLabelsByIndex(e729_main_proc)
+        e729_main_insts = [e729_main_insts[0]] + [
+            inst("PUSHIS",0),
+            inst("PUSHIS",0x105),
+            inst("COMM",7),
+            inst("PUSHREG"),
+            inst("EQ"),
+            inst("IF",0),
+            inst("PUSHIS",0x105),
+            inst("COMM",0x8),
+            inst("PUSHIS",0x2d9),
+            inst("PUSHIS",0x40b),
+            inst("COMM",0x28),
+            inst("END"),
+            inst("PUSHIS",0x2d9),
+            inst("PUSHIS",0x2b),
+            inst("PUSHIS",0x1),
+            inst("COMM",0x97),
+            inst("COMM",0x23),
+            inst("COMM",0x2e),
+            inst("END")
+        ]
+        e729_main_labels = [
+            assembler.label("DANTE_FOUGHT",13)
+        ]
+        e729_obj.changeProcByIndex(e729_main_insts, e729_main_labels, e729_main_proc)
+        self.dds3.add_new_file(custom_vals.SCRIPT_OBJ_PATH['e729'], BytesIO(bytes(e729_obj.toBytes())))
+        
+        
+        #Dante 2 reward
+        f043_obj = self.get_script_obj_by_name('f043')
+        f043_dante_callback_proc = f043_obj.getProcIndexByLabel("012_battle_aft")
+        f043_dante_callback_insts, f043_dante_callback_labels = f043_obj.getProcInstructionsLabelsByIndex(f043_dante_callback_proc)
+        if config_settings.menorah_groups:
+            f043_dante_callback_insts = f043_dante_callback_insts[0:8] + self.get_flag_reward_insts("Dante 2",world) + f043_dante_callback_insts[8:-1] + [inst("END")]
+        else:
+            f043_dante_menorah_insts = [
+                inst("PUSHIS",0x3eb),
+                inst("COMM",0x8),
+            ]
+            f043_dante_callback_insts = f043_dante_callback_insts[0:8] + self.get_flag_reward_insts("Dante 2",world) + f043_dante_menorah_insts + f043_dante_callback_insts[8:-1] + [inst("END")]
+        f043_obj.changeProcByIndex(f043_dante_callback_insts, f043_dante_callback_labels, f043_dante_callback_proc)
+        f043_obj.changeMessageByIndex(assembler.message(self.get_reward_str("Dante 2",world),"MSG_012_BATTLE_AFTER"),0x25)
+        f043_obj.changeMessageByIndex(assembler.message("You sense the presence of^n^r"+self.get_checks_boss_name("Dante 2",world)+"^p.","FIRE_YURE"),0x31)
+
+        #Fix doors in Dante chase sequence
+        f043_door7_proc = f043_obj.getProcIndexByLabel("007_door_open")
+        f043_door7_insts, f043_door7_labels = f043_obj.getProcInstructionsLabelsByIndex(f043_door7_proc)
+        f043_door7_insts[2] = inst("PUSHIS", 0x12b) #Agree with riders flag for now
+        f043_obj.changeProcByIndex(f043_door7_insts, f043_door7_labels, f043_door7_proc)
+        f043_door5_proc = f043_obj.getProcIndexByLabel("005_door_open")
+        f043_door5_insts, f043_door5_labels = f043_obj.getProcInstructionsLabelsByIndex(f043_door5_proc)
+        f043_door5_insts[2] = inst("PUSHIS", 0x12b) #Agree with riders flag for now
+        f043_obj.changeProcByIndex(f043_door5_insts, f043_door5_labels, f043_door5_proc)
+        
+        #Kalpa 3 tunnels
+        f043_kalpa2_tunnel_proc = f043_obj.getProcIndexByLabel("001_01eve_02")
+        f043_kalpa2_tunnel_insts, f043_kalpa2_tunnel_labels = f043_obj.getProcInstructionsLabelsByIndex(f043_kalpa2_tunnel_proc)
+        f043_kalpa2_tunnel_insert_insts = [
+            inst("PUSHIS",0x3ec),
+            inst("PUSHIS",0x2a),
+            inst("PUSHIS",0x1),
+            inst("COMM",0x97),
+            inst("PUSHIS",0x2c7), #Call a null event (LoA Lobby 2 Cutscene)
+            inst("COMM",0x66)
+        ]
+        f043_kalpa2_tunnel_insts = f043_kalpa2_tunnel_insts[0:60] + f043_kalpa2_tunnel_insert_insts + f043_kalpa2_tunnel_insts[62:-1] + [inst("END")]
+        for l in f043_kalpa2_tunnel_labels:
+            if l.label_offset > 60:
+                l.label_offset += 4
+        f043_obj.changeProcByIndex(f043_kalpa2_tunnel_insts, f043_kalpa2_tunnel_labels, f043_kalpa2_tunnel_proc)
+        
+        f043_lobby_tunnel_proc = f043_obj.getProcIndexByLabel("001_01eve_03")
+        f043_lobby_tunnel_insts, f043_lobby_tunnel_labels = f043_obj.getProcInstructionsLabelsByIndex(f043_lobby_tunnel_proc)
+        f043_lobby_tunnel_insert_insts = [
+            inst("PUSHIS",0x3ed),
+            inst("PUSHIS",0x28),
+            inst("PUSHIS",0x1),
+            inst("COMM",0x97),
+            inst("PUSHIS",0x2c7), #Call a null event (LoA Lobby 2 Cutscene)
+            inst("COMM",0x66)
+        ]
+        f043_lobby_tunnel_insts = f043_lobby_tunnel_insts[0:60] + f043_lobby_tunnel_insert_insts + f043_lobby_tunnel_insts[62:-1] + [inst("END")]
+        for l in f043_lobby_tunnel_labels:
+            if l.label_offset > 60:
+                l.label_offset += 4
+        f043_obj.changeProcByIndex(f043_lobby_tunnel_insts, f043_lobby_tunnel_labels, f043_lobby_tunnel_proc)
+        
+        f043_kalpa4_tunnel_proc = f043_obj.getProcIndexByLabel("002_01eve_02")
+        f043_kalpa4_tunnel_insts, f043_kalpa4_tunnel_labels = f043_obj.getProcInstructionsLabelsByIndex(f043_kalpa4_tunnel_proc)
+        f043_kalpa4_tunnel_insert_insts = [
+            inst("PUSHIS",0x3ee),
+            inst("PUSHIS",0x2c),
+            inst("PUSHIS",0x1),
+            inst("COMM",0x97),
+            inst("PUSHIS",0x2c7), #Call a null event (LoA Lobby 2 Cutscene)
+            inst("COMM",0x66)
+        ]
+        f043_kalpa4_tunnel_insts = f043_kalpa4_tunnel_insts[0:60] + f043_kalpa4_tunnel_insert_insts + f043_kalpa4_tunnel_insts[62:-1] + [inst("END")]
+        for l in f043_kalpa4_tunnel_labels:
+            if l.label_offset > 60:
+                l.label_offset += 4
+        f043_obj.changeProcByIndex(f043_kalpa4_tunnel_insts, f043_kalpa4_tunnel_labels, f043_kalpa4_tunnel_proc)
+        
+        f043_star_tunnel_proc = f043_obj.getProcIndexByLabel("029_01eve_01")
+        f043_star_tunnel_insts, f043_star_tunnel_labels = f043_obj.getProcInstructionsLabelsByIndex(f043_star_tunnel_proc)
+        f043_star_tunnel_insert_insts = [
+            inst("PUSHIS",0x3f2),
+            inst("PUSHIS",0x2c),
+            inst("PUSHIS",0x1),
+            inst("COMM",0x97),
+            inst("PUSHIS",0x2c7), #Call a null event (LoA Lobby 2 Cutscene)
+            inst("COMM",0x66)
+        ]
+        f043_star_tunnel_insts = f043_star_tunnel_insts[0:60] + f043_star_tunnel_insert_insts + f043_star_tunnel_insts[62:-1] + [inst("END")]
+        for l in f043_star_tunnel_labels:
+            if l.label_offset > 60:
+                l.label_offset += 4
+        f043_obj.changeProcByIndex(f043_star_tunnel_insts, f043_star_tunnel_labels, f043_star_tunnel_proc)
+        
+        if config_settings.menorah_groups: #Menorah hint
+            f043_obj.changeMessageByIndex(assembler.message("> Retrieve these candelabra^nfrom ^g"+self.get_flag_reward_location_string(0x3e4,world)+"^p.", "MSG_001_2"),0xc)
+        
+        f043_lb = self.push_bf_into_lb(f043_obj, 'f043')
+        self.dds3.add_new_file(custom_vals.LB0_PATH['f043'], f043_lb)
+        
+        #Shorten Beelzebub
+        e749_obj = self.get_script_obj_by_name('e749')
+        e749_main_proc = e749_obj.getProcIndexByLabel("e749_main")
+        e749_main_insts, e749_main_labels = e749_obj.getProcInstructionsLabelsByIndex(e749_main_proc)
+        e749_main_insts = [e749_main_insts[0]] + [
+            inst("PUSHIS",0),
+            inst("PUSHIS",0x114),
+            inst("COMM",7),
+            inst("PUSHREG"),
+            inst("EQ"),
+            inst("IF",0),
+            inst("PUSHIS",0x114),
+            inst("COMM",0x8),
+            inst("PUSHIS",0x928),
+            inst("COMM",0x8),
+            inst("PUSHIS",0x2ed),
+            inst("PUSHIS",0x1c2),
+            inst("COMM",0x28),
+            inst("END"),
+            inst("PUSHIS",0x2ed),
+            inst("PUSHIS",0x2c),
+            inst("PUSHIS",0x1),
+            inst("COMM",0x97),
+            inst("COMM",0x23),
+            inst("COMM",0x2e),
+            inst("END")
+        ]
+        e749_main_labels = [
+            assembler.label("BELZ_FOUGHT",15)
+        ]
+        e749_obj.changeProcByIndex(e749_main_insts, e749_main_labels, e749_main_proc)
+        self.dds3.add_new_file(custom_vals.SCRIPT_OBJ_PATH['e749'], BytesIO(bytes(e749_obj.toBytes())))
+
+        #Beelzebub callback is 0x2e8 don't forget it
+        f044_obj = self.get_script_obj_by_name('f044')
+
+        f044_belz_rwms = f044_obj.appendMessage(self.get_reward_str("Beelzebub",world),"BELZ_RWMS")
+        f044_belz_rwms_insts = [
+            inst("PROC",len(f044_obj.p_lbls().labels)),
+            inst("COMM",0x60),
+            inst("COMM",1),
+            inst("PUSHIS",f044_belz_rwms),
+            inst("COMM",0),
+            inst("COMM",2),
+            inst("COMM",0x61),
+        ] + self.get_flag_reward_insts("Beelzebub",world) + [
+            inst("END")
+        ]
+
+        f044_belz_reward_proc_str = "BELZ_CB"
+        f044_obj.appendProc(f044_belz_rwms_insts,[],f044_belz_reward_proc_str)
+        self.insert_callback('f044', 0x2e8, f044_belz_reward_proc_str)
+        
+        f044_obj.changeMessageByIndex(assembler.message("> ^r"+self.get_checks_boss_name("Beelzebub",world)+"^p can be felt^nbehind the door.^n^x> Will you enter?" ,"F044_DOOR03"),0x83)
+
+        #Skip kalpa 4 tunnels
+        f044_kalpa3_tunnel_proc = f044_obj.getProcIndexByLabel("001_01eve_02")
+        f044_kalpa3_tunnel_insts, f044_kalpa3_tunnel_labels = f044_obj.getProcInstructionsLabelsByIndex(f044_kalpa3_tunnel_proc)
+        f044_kalpa3_tunnel_insert_insts = [
+            inst("PUSHIS",0x3ee),
+            inst("PUSHIS",0x2b),
+            inst("PUSHIS",0x1),
+            inst("COMM",0x97),
+            inst("PUSHIS",0x2c7), #Call a null event (LoA Lobby 2 Cutscene)
+            inst("COMM",0x66)
+        ]
+        f044_kalpa3_tunnel_insts = f044_kalpa3_tunnel_insts[0:60] + f044_kalpa3_tunnel_insert_insts + f044_kalpa3_tunnel_insts[62:-1] + [inst("END")]
+        for l in f044_kalpa3_tunnel_labels:
+            if l.label_offset > 60:
+                l.label_offset += 4
+        f044_obj.changeProcByIndex(f044_kalpa3_tunnel_insts, f044_kalpa3_tunnel_labels, f044_kalpa3_tunnel_proc)
+        
+        f044_lobby_tunnel_proc = f044_obj.getProcIndexByLabel("001_01eve_03")
+        f044_lobby_tunnel_insts, f044_lobby_tunnel_labels = f044_obj.getProcInstructionsLabelsByIndex(f044_lobby_tunnel_proc)
+        f044_lobby_tunnel_insert_insts = [
+            inst("PUSHIS",0x3ef),
+            inst("PUSHIS",0x28),
+            inst("PUSHIS",0x1),
+            inst("COMM",0x97),
+            inst("PUSHIS",0x2c7), #Call a null event (LoA Lobby 2 Cutscene)
+            inst("COMM",0x66)
+        ]
+        f044_lobby_tunnel_insts = f044_lobby_tunnel_insts[0:60] + f044_lobby_tunnel_insert_insts + f044_lobby_tunnel_insts[62:-1] + [inst("END")]
+        for l in f044_lobby_tunnel_labels:
+            if l.label_offset > 60:
+                l.label_offset += 4
+        f044_obj.changeProcByIndex(f044_lobby_tunnel_insts, f044_lobby_tunnel_labels, f044_lobby_tunnel_proc)
+        
+        f044_kalpa5_tunnel_proc = f044_obj.getProcIndexByLabel("002_01eve_02")
+        f044_kalpa5_tunnel_insts, f044_kalpa5_tunnel_labels = f044_obj.getProcInstructionsLabelsByIndex(f044_kalpa5_tunnel_proc)
+        f044_kalpa5_tunnel_insert_insts = [
+            inst("PUSHIS",0x3f0),
+            inst("PUSHIS",0x2d),
+            inst("PUSHIS",0x1),
+            inst("COMM",0x97),
+            inst("PUSHIS",0x2c7), #Call a null event (LoA lobby 2 Cutscene)
+            inst("COMM",0x66)
+        ]
+        f044_kalpa5_tunnel_insts = f044_kalpa5_tunnel_insts[0:60] + f044_kalpa5_tunnel_insert_insts + f044_kalpa5_tunnel_insts[62:-1] + [inst("END")]
+        for l in f044_kalpa5_tunnel_labels:
+            if l.label_offset > 60:
+                l.label_offset += 4
+        f044_obj.changeProcByIndex(f044_kalpa5_tunnel_insts, f044_kalpa5_tunnel_labels, f044_kalpa5_tunnel_proc)
+        
+        f044_star_tunnel_proc = f044_obj.getProcIndexByLabel("030_01eve_01")
+        f044_star_tunnel_insts, f044_star_tunnel_labels = f044_obj.getProcInstructionsLabelsByIndex(f044_star_tunnel_proc)
+        f044_star_tunnel_insert_insts = [
+            inst("PUSHIS",0x3f2),
+            inst("PUSHIS",0x2b),
+            inst("PUSHIS",0x1),
+            inst("COMM",0x97),
+            inst("PUSHIS",0x2c7), #Call a null event (LoA lobby 2 Cutscene)
+            inst("COMM",0x66)
+        ]
+        f044_star_tunnel_insts = f044_star_tunnel_insts[0:60] + f044_star_tunnel_insert_insts + f044_star_tunnel_insts[62:-1] + [inst("END")]
+        for l in f044_star_tunnel_labels:
+            if l.label_offset > 60:
+                l.label_offset += 4
+        f044_obj.changeProcByIndex(f044_star_tunnel_insts, f044_star_tunnel_labels, f044_star_tunnel_proc)
+        
+        if config_settings.menorah_groups: #Menorah hint
+            f044_obj.changeMessageByIndex(assembler.message("> Retrieve these candelabra^nfrom ^g"+self.get_flag_reward_location_string(0x3e1,world)+"^p.", "MSG_001_2"),0x7)
+
+        f044_lb = self.push_bf_into_lb(f044_obj, 'f044')
+        self.dds3.add_new_file(custom_vals.LB0_PATH['f044'], f044_lb)
+        
+        #Shorten Metatron
+        e750_obj = self.get_script_obj_by_name('e750')
+        e750_main_proc = e750_obj.getProcIndexByLabel("e750_main")
+        e750_main_insts, e750_main_labels = e750_obj.getProcInstructionsLabelsByIndex(e750_main_proc)
+        e750_main_insts = [e750_main_insts[0]] + [
+            inst("PUSHIS",0),
+            inst("PUSHIS",0x115),
+            inst("COMM",7),
+            inst("PUSHREG"),
+            inst("EQ"),
+            inst("IF",0),
+            inst("PUSHIS",0x115),
+            inst("COMM",0x8),
+            inst("PUSHIS",0x91b),
+            inst("COMM",0x8),
+            inst("PUSHIS",0x2ee),
+            inst("PUSHIS",0x1c1),
+            inst("COMM",0x28),
+            inst("END"),
+            inst("PUSHIS",0x2ee),
+            inst("PUSHIS",0x2d),
+            inst("PUSHIS",0x1),
+            inst("COMM",0x97),
+            inst("COMM",0x23),
+            inst("COMM",0x2e),
+            inst("END")
+        ]
+        e750_main_labels = [
+            assembler.label("META_FOUGHT",15)
+        ]
+        e750_obj.changeProcByIndex(e750_main_insts, e750_main_labels, e750_main_proc)
+        self.dds3.add_new_file(custom_vals.SCRIPT_OBJ_PATH['e750'], BytesIO(bytes(e750_obj.toBytes())))
+        
+        #Metatron callback is 0x1bc, don't forget it
+        f045_obj = self.get_script_obj_by_name('f045')
+
+        f045_meta_rwms = f045_obj.appendMessage(self.get_reward_str("Metatron",world),"META_RWMS")
+        f045_meta_rwms_insts = [
+            inst("PROC",len(f045_obj.p_lbls().labels)),
+            inst("COMM",0x60),
+            inst("COMM",1),
+            inst("PUSHIS",f045_meta_rwms),
+            inst("COMM",0),
+            inst("COMM",2),
+            inst("COMM",0x61),
+        ] + self.get_flag_reward_insts("Metatron",world) + [
+            inst("END")
+        ]
+
+        f045_meta_reward_proc_str = "META_CB"
+        f045_obj.appendProc(f045_meta_rwms_insts,[],f045_meta_reward_proc_str)
+        self.insert_callback('f045', 0x1bc, f045_meta_reward_proc_str)
+        
+        f045_obj.changeMessageByIndex(assembler.message("> You sense ^r"+self.get_checks_boss_name("Metatron",world)+"^p^nbeyond the door.^n^x> Will you enter?" ,"F045_DOOR02"),0x98)
+
+        #Change magic and agility stat doors to require 15 instead of 25 (20 for agility in vanilla?)
+        f045_magic1_proc = f045_obj.getProcIndexByLabel("014_01eve_02")
+        f045_magic1_insts, f045_magic1_labels = f045_obj.getProcInstructionsLabelsByIndex(f045_magic1_proc)
+        f045_magic1_insts[61] = inst("PUSHIS", 0xe)
+        f045_obj.changeProcByIndex(f045_magic1_insts, f045_magic1_labels, f045_magic1_proc)
+        f045_magic2_proc = f045_obj.getProcIndexByLabel("014_01eve_03")
+        f045_magic2_insts, f045_magic2_labels = f045_obj.getProcInstructionsLabelsByIndex(f045_magic2_proc)
+        f045_magic2_insts[61] = inst("PUSHIS", 0xe)
+        f045_obj.changeProcByIndex(f045_magic2_insts, f045_magic2_labels, f045_magic2_proc)
+        f045_agility1_proc = f045_obj.getProcIndexByLabel("014_01eve_01")
+        f045_agility1_insts, f045_agility1_labels = f045_obj.getProcInstructionsLabelsByIndex(f045_agility1_proc)
+        f045_agility1_insts[61] = inst("PUSHIS", 0xe)
+        f045_obj.changeProcByIndex(f045_agility1_insts, f045_agility1_labels, f045_agility1_proc)
+        f045_agility2_proc = f045_obj.getProcIndexByLabel("019_01eve_01")
+        f045_agility2_insts, f045_agility2_labels = f045_obj.getProcInstructionsLabelsByIndex(f045_agility2_proc)
+        f045_agility2_insts[61] = inst("PUSHIS", 0xe)
+        f045_obj.changeProcByIndex(f045_agility2_insts, f045_agility2_labels, f045_agility2_proc)
+        
+        #Skip kalpa 5 tunnels
+        f045_kalpa4_tunnel_proc = f045_obj.getProcIndexByLabel("001_01eve_02")
+        f045_kalpa4_tunnel_insts, f045_kalpa4_tunnel_labels = f045_obj.getProcInstructionsLabelsByIndex(f045_kalpa4_tunnel_proc)
+        f045_kalpa4_tunnel_insert_insts = [
+            inst("PUSHIS",0x3f0),
+            inst("PUSHIS",0x2c),
+            inst("PUSHIS",0x1),
+            inst("COMM",0x97),
+            inst("PUSHIS",0x2c7), #Call a null event (LoA lobby 2 Cutscene)
+            inst("COMM",0x66)
+        ]
+        f045_kalpa4_tunnel_insts = f045_kalpa4_tunnel_insts[0:60] + f045_kalpa4_tunnel_insert_insts + f045_kalpa4_tunnel_insts[62:-1] + [inst("END")]
+        for l in f045_kalpa4_tunnel_labels:
+            if l.label_offset > 60:
+                l.label_offset += 4
+        f045_obj.changeProcByIndex(f045_kalpa4_tunnel_insts, f045_kalpa4_tunnel_labels, f045_kalpa4_tunnel_proc)
+        
+        f045_lobby_tunnel_proc = f045_obj.getProcIndexByLabel("001_01eve_03")
+        f045_lobby_tunnel_insts, f045_lobby_tunnel_labels = f045_obj.getProcInstructionsLabelsByIndex(f045_lobby_tunnel_proc)
+        f045_lobby_tunnel_insert_insts = [
+            inst("PUSHIS",0x3f1),
+            inst("PUSHIS",0x28),
+            inst("PUSHIS",0x1),
+            inst("COMM",0x97),
+            inst("PUSHIS",0x2c7), #Call a null event (LoA lobby 2 Cutscene)
+            inst("COMM",0x66)
+        ]
+        f045_lobby_tunnel_insts = f045_lobby_tunnel_insts[0:60] + f045_lobby_tunnel_insert_insts + f045_lobby_tunnel_insts[62:-1] + [inst("END")]
+        for l in f045_lobby_tunnel_labels:
+            if l.label_offset > 60:
+                l.label_offset += 4
+        f045_obj.changeProcByIndex(f045_lobby_tunnel_insts, f045_lobby_tunnel_labels, f045_lobby_tunnel_proc)
+        
+        f045_lb = self.push_bf_into_lb(f045_obj, 'f045')
+        self.dds3.add_new_file(custom_vals.LB0_PATH['f045'], f045_lb)
+
+        if SCRIPT_DEBUG:
+            self.script_debug_out( f040_obj,'f040.bf')
+            self.script_debug_out( f041_obj,'f041.bf')
+            self.script_debug_out( f042_obj,'f042.bf')
+            self.script_debug_out( f043_obj,'f043.bf')
+            self.script_debug_out( f044_obj,'f044.bf')
+            self.script_debug_out( f045_obj,'f045.bf')
+            self.script_debug_out( self.get_script_obj_by_name('e710'),'e710.bf')
+            self.script_debug_out( e711_obj,'e711.bf')
+            self.script_debug_out( e712_obj,'e712.bf')
+            self.script_debug_out( e713_obj,'e713.bf')
+            self.script_debug_out( e714_obj,'e714.bf')
+            self.script_debug_out( e715_obj,'e715.bf')
+            self.script_debug_out( e729_obj,'e729.bf')
+            self.script_debug_out( self.get_script_obj_by_name('e731'),'e731.bf')
+            self.script_debug_out( e728_obj,'e728.bf')
+            self.script_debug_out( self.get_script_obj_by_name('e730'),'e730.bf')
+            self.script_debug_out( e749_obj,'e749.bf')
+            self.script_debug_out( e750_obj,'e750.bf')
+            self.script_debug_out( self.get_script_obj_by_name('e718'),'e718.bf')
+            self.script_debug_out( self.get_script_obj_by_name('e719'),'e719.bf')
+            #self.script_debug_out( self.get_script_obj_by_name('e751'),'e751.bf') This causes an error because no text
+            #self.script_debug_out( self.get_script_obj_by_name('e752'),'e752.bf')
+            #self.script_debug_out( self.get_script_obj_by_name('e753'),'e753.bf')
+            #self.script_debug_out( self.get_script_obj_by_name('e754'),'e754.bf')
+            #self.script_debug_out( self.get_script_obj_by_name('e755'),'e755.bf')
 
         #Cutscene removal in LoA Lobby f040
         #If possible, have each hole with 3 options. Jump, Skip, Cancel

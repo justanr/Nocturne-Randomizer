@@ -1,14 +1,14 @@
-019 Megido 8 1 58
-01A Megidola 10 1 68
-01B Megidolaon 14 1 78
-0BE Deathtouch 1 1 5
-0BF Mana Drain 5 1 25
-0C0 Life Drain 7 1 45
-10A Stinger 100 1 50
-10D Showtime 100 1 50
-11E Beast Roar 100 1 50
-117 Meditation 100 1 45
-093 Freikugel 100 1 50
+019 Megido 8 1 57
+01A Megidola 10 1 67
+01B Megidolaon 14 1 77
+0BE Deathtouch 1 1 2
+0BF Mana Drain 5 1 32
+0C0 Life Drain 7 1 52
+10A Stinger 100 1 58
+10D Showtime 100 1 70
+11E Beast Roar 100 1 70
+117 Meditation 100 1 52
+093 Freikugel 100 1 58
 183 Seduce 2 2 1
 181 Scout 3 2 1
 188 Beseech 3 2 1
@@ -37,95 +37,95 @@
 19F Nag 6 2 1
 1A2 Maiden's Plea 6 2 1
 1A3 Wine Party 7 2 1
-037 Makajam 5 1 23
-038 Makajamon 8 1 43
-0C6 Mute Gaze 3 1 23
-0CF Dismal Tune 7 1 53
-0CA Toxic Cloud 4 1 14
-105 Soul Divide 100 1 53
+037 Makajam 5 1 24
+038 Makajamon 8 1 44
+0C6 Mute Gaze 3 1 24
+0CF Dismal Tune 7 1 54
+0CA Toxic Cloud 4 1 24
+105 Soul Divide 100 1 44
 140 Anti Curse 3 0 1
 14A Void Curse 6 0 1
-020 Mudo 3 1 21
-021 Mudoon 6 1 41
-022 Mamudo 6 1 31
-023 Mamudoon 9 1 51
-0C5 Stone Gaze 7 1 21
-0C7 Evil Gaze 8 1 11
-0C4 Hell Gaze 9 1 41
+020 Mudo 3 1 31
+021 Mudoon 6 1 51
+022 Mamudo 6 1 41
+023 Mamudoon 9 1 61
+0C5 Stone Gaze 7 1 18
+0C7 Evil Gaze 8 1 21
+0C4 Hell Gaze 9 1 56
 13F Anti Death 5 0 1
 149 Void Death 8 0 1
 00D Zio 1 1 1
-00E Zionga 4 1 30
-00F Ziodyne 7 1 50
+00E Zionga 4 1 25
+00F Ziodyne 7 1 45
 010 Mazio 4 1 5
-011 Mazionga 7 1 35
-012 Maziodyne 10 1 55
-0B6 Shock 5 1 20
+011 Mazionga 7 1 30
+012 Maziodyne 10 1 50
+0B6 Shock 5 1 15
 0B7 Bolt Storm 9 1 60
 137 Elec Boost 6 0 1
 13C Anti Elec 4 0 1
 146 Void Elec 7 0 1
 150 Elec Drain 9 0 1
 155 Elec Repel 10 0 1
-01C Hama 3 1 21
-01D Hamaon 6 1 41
-01E Mahama 6 1 31
-01F Mahamaon 9 1 51
-0C1 Violet Flash 8 1 30
-0BC Thunderclap 6 1 21
-0C3 Radiance 11 1 55
-0BD Holy Wrath 11 1 31
+01C Hama 3 1 31
+01D Hamaon 6 1 51
+01E Mahama 6 1 41
+01F Mahamaon 9 1 61
+0C1 Violet Flash 8 1 45
+0BC Thunderclap 6 1 14
+0C3 Radiance 11 1 50
+0BD Holy Wrath 11 1 36
 0C2 Starlight 100 1 55
 07F Godly Light 100 1 41
 11F God's Bow 100 1 80
 13E Anti Expel 5 0 1
 148 Void Expel 8 0 1
-073 Sacrifice 6 1 52
-098 Last Resort 4 1 32
-074 Kamikaze 3 1 42
+073 Sacrifice 6 1 55
+098 Last Resort 4 1 35
+074 Kamikaze 3 1 45
 001 Agi 1 1 1
-002 Agilao 4 1 30
-003 Agidyne 7 1 50
+002 Agilao 4 1 25
+003 Agidyne 7 1 45
 004 Maragi 4 1 5
-005 Maragion 7 1 35
-006 Maragidyne 10 1 55
-0B0 Fire Breath 5 1 20
+005 Maragion 7 1 30
+006 Maragidyne 10 1 50
+0B0 Fire Breath 5 1 15
 0B1 Hellfire 7 1 40
 0B2 Prominence 10 1 70
 0B3 Ragnarok 100 1 65
-11B Hell Burner 100 1 55
+11B Hell Burner 100 1 50
 0A1 Magma Axis 100 1 60
-135 Fire Boost 6 0 1 
+135 Fire Boost 6 0 1
 13A Anti Fire 4 0 1
 144 Void Fire 7 0 1
 14E Fire Drain 9 0 1
 153 Fire Repel 10 0 1
 013 Zan 1 1 1
-014 Zanma 4 1 30
-015 Zandyne 7 1 50
+014 Zanma 4 1 25
+015 Zandyne 7 1 45
 016 Mazan 4 1 5
-017 Mazanma 7 1 35
-018 Mazandyne 10 1 55
-0B8 Wing Buffet 5 1 20
+017 Mazanma 7 1 30
+018 Mazandyne 10 1 50
+0B8 Wing Buffet 5 1 15
 0B9 Tornado 7 1 60
 0BA Wind Cutter 9 1 65
 0BB Wet Wind 100 1 45
-10C Whirlwind 100 1 55
-11A Hell Exhaust 100 1 58
+10C Whirlwind 100 1 50
+11A Hell Exhaust 100 1 37
 138 Force Boost 6 0 1
 13D Anti Force 4 0 1
 147 Void Force 7 0 1
 151 Force Drain 9 0 1
 156 Force Repel 10 0 1
-024 Dia 2 1 1
+024 Dia 2 1 3
 025 Diarama 6 1 23
-026 Diarahan 9 1 53
+026 Diarahan 9 1 33
 027 Media 5 1 13
 028 Mediarama 8 1 43
-029 Mediarahan 11 1 63
-0DA Prayer 11 1 73
+029 Mediarahan 11 1 53
+0DA Prayer 11 1 63
 031 Recarm 8 1 1
-032 Samrecarm 11 1 53
+032 Samrecarm 11 1 33
 02B Patra 2 1 1
 02C Me Patra 5 1 17
 02D Mutudi 2 1 1
@@ -139,96 +139,96 @@
 15E Mana Refill 7 0 1
 15C Victory Cry 13 0 1
 007 Bufu 1 1 1
-008 Bufula 4 1 30
-009 Bufudyne 7 1 50
+008 Bufula 4 1 25
+009 Bufudyne 7 1 45
 00A Mabufu 4 1 5
-00B Mabufula 7 1 35
-00C Mabufudyne 10 1 55
-0B4 Ice Breath 5 1 20
+00B Mabufula 7 1 30
+00C Mabufudyne 10 1 50
+0B4 Ice Breath 5 1 15
 0B5 Glacial Blast 8 1 60
 136 Ice Boost 6 0 1
 13B Anti Ice 4 0 1
 145 Void Ice 7 0 1
 14F Ice Drain 9 0 1
 154 Ice Repel 10 0 1
-0D2 Lullaby 2 1 2
-03C Dormina 4 1 12
+0D2 Lullaby 2 1 6
+03C Dormina 4 1 26
 0D4 Eternal Rest 7 1 36
-03D Pulinpa 3 1 4
-0D5 Sonic Wave 6 1 14
-0D8 Panic Voice 7 1 14
-03F Tentarafoo 8 1 44
-0D6 Sexy Gaze 3 1 18
-03E Marin Karin 4 1 18
-0D7 Allure 8 1 48
-0D9 Intoxicate 100 1 34
-11D Death Lust 100 1 58
-116 Preach 100 1 43
-0F9 Wild Dance 100 1 34
+03D Pulinpa 3 1 8
+0D5 Sonic Wave 6 1 28
+0D8 Panic Voice 7 1 28
+03F Tentarafoo 8 1 48
+0D6 Sexy Gaze 3 1 12
+03E Marin Karin 4 1 12
+0D7 Allure 8 1 49
+0D9 Intoxicate 100 1 38
+11D Death Lust 100 1 52
+116 Preach 100 1 44
+0F9 Wild Dance 100 1 38
 142 Anti Mind 3 0 1
 14C Void Mind 6 0 1
-03B Shibaboo 4 1 17
-0D3 Binding Cry 6 1 37
-0D1 Stun Gaze 4 1 20
+03B Shibaboo 4 1 10
+0D3 Binding Cry 6 1 30
+0D1 Stun Gaze 4 1 22
 141 Anti Nerve 3 0 1
 14B Void Nerve 6 0 1
-075 Feral Bite 1 1 6
-076 Venom Bite 3 1 16
-077 Charm Bite 5 1 26
+075 Feral Bite 1 1 16
+076 Venom Bite 3 1 26
+077 Charm Bite 5 1 31
 079 Stun Bite 6 1 36
-078 Stone Bite 7 1 46
-07A Hell Fang 8 1 56
+078 Stone Bite 7 1 51
+07A Hell Fang 8 1 59
 07B Feral Claw 1 1 1
 07C Venom Claw 3 1 21
-07D Stun Claw 5 1 41
-07E Iron Claw 7 1 61
+07D Stun Claw 5 1 31
+07E Iron Claw 7 1 62
 06F Needle Rush 1 1 1
-071 Toxic Sting 3 1 11
+071 Toxic Sting 3 1 21
 070 Stun Needle 5 1 31
-072 Arid Needle 7 1 41
+072 Arid Needle 7 1 46
 060 Lunge 1 1 1
-061 Hell Thrust 3 1 20
-063 Tempest 8 1 43
-064 Hades Blast 8 1 63
-062 Berserk 6 1 13
-06B Mighty Gust 5 1 32
-067 Brutal Slash 6 1 27
-06D Guillotine 7 1 42
-069 Dark Sword 8 1 47
-06A Stasis Blade 9 1 37
-065 Heat Wave 8 1 25
-066 Blight 10 1 45
-068 Hassohappa 11 1 65
+061 Hell Thrust 3 1 23
+063 Tempest 8 1 33
+064 Hades Blast 8 1 53
+062 Berserk 6 1 11
+06B Mighty Gust 5 1 27
+067 Brutal Slash 6 1 32
+06D Guillotine 7 1 37
+069 Dark Sword 8 1 42
+06A Stasis Blade 9 1 47
+065 Heat Wave 8 1 20
+066 Blight 10 1 43
+068 Hassohappa 11 1 66
 06E Chaos Blade 10 1 48
 06C Deathbound 11 1 68
 09B Earthquake 100 1 65
-106 E&I 100 1 25
-107 Rebellion 100 1 45
-108 Bullet-Time 100 1 43
+106 E&I 100 1 23
+107 Rebellion 100 1 47
+108 Bullet-Time 100 1 38
 118 Terror Blade 100 1 48
-119 Hell Spin 100 1 55
+119 Hell Spin 100 1 38
 113 Andalucia 100 1 30
-088 Divine Shot 100 1 50
-0A0 Spiral Viper 100 1 50
-090 Oni-Kagura 100 1 50
-083 Deadly Fury 100 1 50
-08F Javelin Rain 100 1 50
-085 Xeros-Beat 100 1 50
+088 Divine Shot 100 1 42
+0A0 Spiral Viper 100 1 43
+090 Oni-Kagura 100 1 40
+083 Deadly Fury 100 1 45
+08F Javelin Rain 100 1 44
+085 Xeros-Beat 100 1 41
 0A3 Gaea Rage 100 1 65
 139 Anti Phys 5 0 1
 143 Void Phys 10 0 1
 14D Phys Drain 11 0 1
 152 Phys Repel 12 0 1
 047 Analyze 3 1 1
-0E0 Focus 5 1 20
+0E0 Focus 5 1 30
 048 Trafuri 5 1 1
 0DF Beckon Call 6 1 1
 04A Riberama 4 1 1
 04C Lightoma 5 1 1
 04B Liftoma 6 1 1
 049 Estoma 7 1 1
-09E Holy Melody 100 1 30
-09F Evil Melody 100 1 75
+09E Holy Melody 100 1 26
+09F Evil Melody 100 1 66
 12C Bright Might 4 0 1
 12D Dark Might 4 0 1
 12B Might 7 0 1
@@ -251,30 +251,32 @@
 128 Fast Retreat 100 0 1
 168 Never Yield 100 0 1
 169 Son's Oath 100 0 1
-035 Sukunda 1 1 1
-034 Tarunda 2 1 1
-036 Rakunda 2 1 1
-039 Dekaja 5 1 25
+035 Sukunda 1 1 4
+034 Tarunda 2 1 4
+036 Rakunda 2 1 4
+039 Dekaja 5 1 29
 0CC Fog Breath 5 1 34
 0CB War Cry 6 1 34
 0CD Taunt 3 1 34
-0CE Debilitate 8 1 54
-04D Dekunda 1 1 25
-041 Sukukaja 3 1 5
-040 Tarukaja 5 1 5
-043 Makakaja 5 1 5
-042 Rakukaja 7 1 5
-044 Tetraja 4 1 15
-046 Tetrakarn 8 1 34
-045 Makarakarn 8 1 34
+0CE Debilitate 8 1 64
+04D Dekunda 1 1 29
+041 Sukukaja 3 1 9
+040 Tarukaja 5 1 9
+043 Makakaja 5 1 9
+042 Rakukaja 7 1 9
+044 Tetraja 4 1 19
+046 Tetrakarn 8 1 39
+045 Makarakarn 8 1 39
 02A Makatora 5 0 1
 109 Provoke 100 1 34
-112 Holy Star 100 1 25
+112 Holy Star 100 1 29
 114 Red Capote 100 1 30
 0F4 Icy Death 100 1 5
 101 Fire of Sinai 100 1 80
 104 Death Flies 100 1 90
-0C9 Bael's Bane 100 1 36
-0A8 Tentacle 100 1 50
-099 Foul Havoc 100 1 10
+0C9 Bael's Bane 100 1 37
+0A8 Tentacle 100 1 53
+099 Foul Havoc 100 1 7
 0FE Phase Shift 100 1 20
+04F Pestilence 100 1 63
+10B Roundtrip 100 1 50

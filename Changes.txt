@@ -1,3 +1,29 @@
+version 0.3.0
+*The Labyrinth of Amala is now open. 3 key items are randomized that unlock Kalpas 2, 3, and 4/5. Kalpa 1 will always be unlocked from Matador check. The star key will always be in the collector Manikin's shop. Cursed hallway will not give you 250000 Macca. Only the closest one of Dante's switches needs to be activated. For the second group, it's the one on the left. Beware of entering the other switch rooms as Dante will chase you and reset all the switches if he touches you. The Magic and Agility doors in Kalpa 5 will only require 15 in the stat instead of 25/20. All kalpa tunnels are removed except for Hell's Vault.
+*The Pyramidion (Yahiro no Himorogi) is now randomized by default
+*New Starting Pixie Flags - Balanced, Random, and Low Level. Choose Balanced to set Pixie's level between 40 and 60. Low Level flag is not recommended for beginners
+*New Flags for Better Skill Mutations - Standard, Random, and Unique. No more Agi to Maragi or Dark Might to Might. Standard gives a curated list of skill mutations that is relatively close to vanilla. Random chooses from a bigger selection of mutations, and Unique allows skills to change into unique skills, although this can make fusion worse.
+*New Ending Selector Flags - TDE Mode has been moved here and renamed to Auto TDE. These flags will be set when you lower ToK, which will close off Labyrinth of Amala
+*New Logic Flags - Vanilla Menoras, No Progression in Labyrinth of Amala, Vanilla Pyramidion, Open Yurakucho Tunnel, and Open Ikebukuro Tunnel
+*Hint messages have been added for all bosses except in the Bandou shrine. Unusually placed hints are: Surt - check his statue. Mada, Mot, Mithra, and Samael - given by previous diet building bosses. Berith - Given by Eligor on same floor. Ahriman, Noah, and Baal Avatar - given by the manikin/soul/dominion outside their boss rooms. Ongyo-Ki and Mara - enter their room early.
+*All key items now have hint messages. Menorahs - Check their pedastal in LoA. Ongyo-Key - Try to enter Ikebukuro tunnel. Eggplant - Enter Mara's room early. Yahiro no Himorogi - Enter the central temple early. Apocalypse Stone - Talk to Arahabaki by the tunnel to the room with the riders cutscene. Golden Goblet - Talk to the pixie next to the Yoyogi park terminal (Incubus is missing, so it can't be him)
+*More boss field models and names are randomzied
+*Generation logic has been tweaked with the goal of giving more route variety. As part of this, beating the Thor gauntlet will automatically unlock the Kabukicho Prison terminal so you do not get walled by a difficult boss at Dante 1's check
+*Enemies have remembered how to use Gathering
+*Demi-fiend now holds a spoon
+*Marogareh now keeps its starting stats to give +2 str/vit for the tutorial
+*Black Frost can no longer spawn in the first area
+*Tetraja will now appear in the first 10 demons alongside buffs/debuffs
+*Pestilence and Roundtrip have been added to the unique skill pool
+*Futomimi and Archangels drop 2 separate rewards instead of sharing one
+*Kagutsuchi may now drop rewards wherever he is
+*The Koppa and Incubus fight now uses their randomized replacements
+*Anti-Expel and Anti-Death are no longer vanilla on Magatamas
+*Bugfix: Tutorial demons can no longer be fused to crash the game. All hail Devil Preta and Hallel Kodama
+*Bugfix: Bishamon 1 and Mithra checks now drop key items properly. All checks have been verified to drop key items correctly, so the Bishamon 1 check no longer gives all three keys.
+*Bugfix: The Futomimi/Archangels check will no longer drop an extra magatama
+*Known Bug: Orthrus and Yaksini's dialogue box names are swapped
+
 version 0.2.5
 *New Flag: TDE Mode - Allows you to inherit pierce from Marogareh and fight Lucifer after Kagutsuchi
 *If an Amala temple key fails to drop when it's supposed to, you can now fight the Bishamon 1 check to receive all 3 keys to prevent being softlocked. Text when collecting the Kimon Stone is changed to reflect this. This is not in intended logic and will be removed once all of the key item drop glitches are found and patched out.

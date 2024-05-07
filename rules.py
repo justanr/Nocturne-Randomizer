@@ -1,9 +1,24 @@
 # rules define the core of the logic
-def set_rules(world):
+def set_rules(world, config_settings):
     def set_rule(a, rule):
         a.rule = rule
     def set_boss_rule(a, rule):
         a.boss_rule = rule
+
+    min_checks_for_asakusa = 15
+    intermediate_check_num = 20
+    advanced_check_num = 25
+    a_tier_check_num = 0
+    s_tier_check_num = 0
+    if config_settings.no_level_safety:
+        min_checks_for_asakusa = 0
+        intermediate_check_num = 0
+        advanced_check_num = 0
+    if config_settings.low_boss_safety:
+        s_tier_check_num = 15
+    if config_settings.high_boss_safety:
+        s_tier_check_num = 25
+        a_tier_check_num = 10
 
     # Area access rules
     set_rule(
@@ -30,10 +45,16 @@ def set_rules(world):
         world.get_area('Nihilo East'), 
         lambda state: state.has_terminal('Ginza')
     )
-    set_rule(
-        world.get_area('Ikebukuro Tunnel'), 
-        lambda state: state.has_checked('Dante 1') and state.has_flag('Ongyo-Key')
-    )
+    if config_settings.open_ikebukuro:
+        set_rule(
+            world.get_area('Ikebukuro Tunnel'), 
+            lambda state: state.has_terminal('Ikebukuro')
+        )
+    else:
+        set_rule(
+            world.get_area('Ikebukuro Tunnel'), 
+            lambda state: state.has_terminal('Ikebukuro') and state.has_flag('Ongyo-Key')
+        )
     set_rule(
         world.get_area('Kabukicho Prison'), 
         lambda state: state.has_checked('Hell Biker')
@@ -52,7 +73,7 @@ def set_rules(world):
     )
     set_rule(
         world.get_area('Yoyogi Park'), 
-        lambda state: state.has_checked('Specter 2')
+        lambda state: state.has_checked('Forneus')
     )
     set_rule(
         world.get_area('Amala Network 3'),
@@ -66,18 +87,24 @@ def set_rules(world):
         world.get_area('Mifunashiro'),
         lambda state: state.has_terminal('Asakusa')
     )
-    set_rule(
-        world.get_area('Yurakucho Tunnel'),
-        #lambda state: state.has_checked('Futomimi')
-        lambda state: state.has_checked('Archangels')
-    )
+    if config_settings.open_yurakucho:
+        set_rule(
+            world.get_area('Yurakucho Tunnel'),
+            #lambda state: state.has_checked('Futomimi')
+            lambda state: state.has_terminal('Ginza') and state.has_num_checks(intermediate_check_num)
+        )
+    else:
+        set_rule(
+            world.get_area('Yurakucho Tunnel'),
+            lambda state: state.has_checked('Archangels')
+        )
     set_rule(
         world.get_area('Diet Building'),
         lambda state: state.has_terminal('Yurakucho Tunnel')
     )
     set_rule(
         world.get_area('Labyrinth of Amala'),
-        lambda state: False # state.has_checked('Specter 1')
+        lambda state: state.has_checked('Matador')
     )
     set_rule(
         world.get_area('ToK'),
@@ -104,7 +131,7 @@ def set_rules(world):
     )
     set_rule(
         world.get_check('Kagutsuchi'),
-        lambda state: state.has_checked('Baal Avatar')
+        lambda state: state.has_checked('Baal Avatar') and state.has_checked('Noah')
     )
     set_rule(
         world.get_check('Lucifer'),
@@ -124,13 +151,15 @@ def set_rules(world):
     )
     set_rule(
         world.get_check('Archangels'),
-        #world.get_check('Futomimi'),
         lambda state: state.has_checked('Futomimi')
-        #lambda state: state.has_checked('Albion') and state.has_checked('Aciel') and state.has_checked('Skadi')
+    )
+    set_rule(
+        world.get_check('Girimehkala'),
+        lambda state: state.has_terminal('Asakusa')
     )
     set_rule(
         world.get_check('The Harlot'),
-        lambda state: state.has_flag('Golden Goblet')
+        lambda state: state.has_flag('Golden Goblet') and state.has_num_checks(min_checks_for_asakusa)
     )
     set_rule(
         world.get_check('Black Rider'),
@@ -138,11 +167,7 @@ def set_rules(world):
     )
     set_rule(
         world.get_check('Mara'),
-        lambda state: state.has_flag('Eggplant') and state.has_terminal('Asakusa')
-    )
-    set_rule(
-        world.get_check('Troll'),
-        lambda state: state.has_terminal('Ginza') and state.has_terminal('Ginza Underpass')
+        lambda state: state.has_flag('Eggplant') and state.has_num_checks(min_checks_for_asakusa)
     )
     set_rule(
         world.get_check('Red Rider'),
@@ -173,10 +198,6 @@ def set_rules(world):
         lambda state: state.has_checked('Kaiwan')
     )
     set_rule(
-        world.get_check('Hell Biker'),
-        lambda state: state.has_checked('Dante 1')
-    )
-    set_rule(
         world.get_check('Ongyo-Ki'),
         lambda state: state.has_checked('Kin-Ki') and state.has_checked('Sui-Ki') and state.has_checked('Fuu-Ki')
     )
@@ -186,7 +207,7 @@ def set_rules(world):
     )
     set_rule(
         world.get_check('White Rider'),
-        lambda state: state.has_flag('Apocalypse Stone') and state.has_terminal('Asakusa')
+        lambda state: state.has_flag('Apocalypse Stone') and state.has_num_checks(min_checks_for_asakusa)
     )
     set_rule(
         world.get_check('Mada'),
@@ -206,78 +227,90 @@ def set_rules(world):
     )
     set_rule(
         world.get_check('Bishamon 1'),
-        lambda state: state.has_checked('Skadi') and state.has_checked('Albion') and state.has_checked('Aciel')
+        lambda state: state.has_terminal('Yurakucho Tunnel')
     )
-    set_rule(
+    if config_settings.menorah_groups:
+        set_rule(
         world.get_check('Dante 2'),
-        lambda state: state.has_checked('White Rider') and state.has_checked('Red Rider') and state.has_checked('Black Rider')
-    )
-    set_rule(
-        world.get_check('Beelzebub'),
-        lambda state: state.has_checked('Dante 2') and state.has_checked('Trumpeter') and 
-            state.has_checked('The Harlot') and state.has_checked('Pale Rider')
-    )
-    set_rule(
-        world.get_check('Metatron'),
-        lambda state: state.has_checked('Beelzebub') and state.has_terminal('Ginza') and state.has_terminal('Asakusa')
-    )
+        lambda state: state.has_flag('Kalpa 2 Menorahs') and state.has_flag('Kalpa 3 Menorahs') and state.has_num_checks(min_checks_for_asakusa)
+        )
+        set_rule(
+            world.get_check('Beelzebub'),
+            lambda state: state.has_checked('Dante 2') and state.has_flag('Kalpa 4 Menorahs')
+        )
+        set_rule(
+            world.get_check('Metatron'),
+            lambda state: state.has_checked('Dante 2') and state.has_flag('Kalpa 4 Menorahs') and state.has_num_checks(advanced_check_num)
+        )
+    else:
+        set_rule(
+            world.get_check('Dante 2'),
+            lambda state: state.has_checked('Black Rider') and state.has_checked('Daisoujou') and state.has_checked('Hell Biker')
+        )
+        set_rule(
+            world.get_check('Beelzebub'),
+            lambda state: state.has_checked('Dante 2') and state.has_checked('Trumpeter') and 
+                state.has_checked('The Harlot') and state.has_checked('Pale Rider')
+        )
+        set_rule(
+            world.get_check('Metatron'),
+            lambda state: state.has_checked('Beelzebub')
+        )
 
+    #S-Tier Bosses: Samael, Noah, Bishamon 2, Pale Rider, Beelzebub, Metatron, Mother Harlot
+    #A-Tier Bosses: Trumpeter, Kagutsuchi, Ahriman, Baal Avatar, Koumouku, Red Rider, White Rider, Dante 2, Mot, Mada, Thor 2, Mara, Black Frost, Skadi, Girimehkala
     # Boss Magatama rules
     set_rule(
-        world.get_check('Girimehkala'),
-        lambda state: state.has_resistance('Mind') or state.has_resistance('Phys')
+        world.get_boss('Girimehkala'),
+        lambda state: state.has_resistance('Mind') and state.has_num_checks(a_tier_check_num)
     )
     set_rule(
         world.get_boss('The Harlot'),
-        lambda state: state.has_resistance("Mind")
+        lambda state: state.has_resistance("Phys") and state.has_num_checks(s_tier_check_num)
     )
     set_rule(
-        world.get_boss('Matador'),
-        lambda state: state.has_resistance("Force")
+        world.get_boss('Mara'),
+        lambda state: state.has_resistance("Curse") and state.has_num_checks(a_tier_check_num)
     )
     set_rule(
         world.get_boss('Thor 2'),
-        lambda state: state.has_resistance('Elec')
+        lambda state: state.has_resistance('Elec') and state.has_num_checks(a_tier_check_num)
     )
     set_rule(
         world.get_boss('Daisoujou'),
-        lambda state: state.has_resistance('Expel') or state.has_resistance('Death') or state.has_resistance('Mind')
+        lambda state: state.has_resistance('Expel')
     )
     set_rule(
-        world.get_boss('Ose'),
-        lambda state: state.has_resistance('Phys')
-    )
-    set_rule(
-        world.get_boss('Hell Biker'),
-        lambda state: state.has_resistance("Force")
+        world.get_boss('Trumpeter'),
+        lambda state: state.has_resistance("Force") and state.has_num_checks(a_tier_check_num)
     )
     set_rule(
         world.get_boss('Kin-Ki'),
         lambda state: state.has_resistance("Phys")
     )
     set_rule(
-        world.get_boss('Sui-Ki'),
-        lambda state: state.has_resistance('Ice')
+        world.get_boss('Ahriman'),
+        lambda state: state.has_resistance('Ice') and state.has_num_checks(a_tier_check_num)
     )
     set_rule(
-        world.get_boss('Fuu-Ki'),
-        lambda state: state.has_resistance('Force')
+        world.get_boss('Noah'),
+        lambda state: state.has_resistance('Fire') and state.has_num_checks(s_tier_check_num)
     )
     set_rule(
         world.get_boss('Mizuchi'),
-        lambda state: state.has_resistance('Mind') or state.has_resistance('Ice')
+        lambda state: state.has_resistance('Mind')
     )
     set_rule(
         world.get_boss('Black Frost'),
-        lambda state: state.has_resistance('Ice') or state.has_resistance('Death')
+        lambda state: state.has_resistance('Death') and state.has_num_checks(a_tier_check_num)
     )
     set_rule(
         world.get_boss('White Rider'),
-        lambda state: state.has_resistance('Fire')
+        lambda state: state.has_resistance('Expel') and state.has_num_checks(a_tier_check_num)
     )
     set_rule(
         world.get_boss('Red Rider'),
-        lambda state: state.has_resistance('Phys')
+        lambda state: state.has_resistance('Phys') and state.has_num_checks(a_tier_check_num)
     )
     set_rule(
         world.get_boss('Black Rider'),
@@ -285,7 +318,7 @@ def set_rules(world):
     )
     set_rule(
         world.get_boss('Pale Rider'),
-        lambda state: state.has_resistance('Curse') or state.has_resistance('Death')
+        lambda state: state.has_resistance('Curse') and state.has_num_checks(s_tier_check_num)
     )
     set_rule(
         world.get_boss('Surt'),
@@ -293,55 +326,51 @@ def set_rules(world):
     )
     set_rule(
         world.get_boss('Mada'),
-        lambda state: state.has_resistance('Mind')
+        lambda state: state.has_resistance('Phys') and state.has_num_checks(a_tier_check_num)
     )
     set_rule(
         world.get_boss('Mot'),
-        lambda state: state.has_resistance("Force")
+        lambda state: state.has_resistance("Force") and state.has_num_checks(a_tier_check_num)
     )
     set_rule(
         world.get_boss('Mithra'),
-        lambda state: state.has_resistance('Expel') or state.has_resistance('Death') #or state.has_resistance('Mind')
+        lambda state: state.has_resistance('Death')
     )
     set_rule(
         world.get_boss('Samael'),
-        lambda state: state.has_resistance('Mind') or state.has_resistance('Nerve')
+        lambda state: state.has_resistance('Nerve') and state.has_num_checks(s_tier_check_num)
     )
     set_rule(
         world.get_boss('Lucifer'),
-        lambda state: state.has_resistance('Nerve')
+        lambda state: state.has_resistance('Nerve') and state.has_num_checks(s_tier_check_num)
     )
     set_rule(
-        world.get_boss('Aciel'),
-        lambda state: state.has_resistance('Phys')
+        world.get_boss('Kagutsuchi'),
+        lambda state: state.has_resistance('Elec') and state.has_num_checks(a_tier_check_num)
     )
     set_rule(
         world.get_boss('Skadi'),
-        lambda state: state.has_resistance('Force') or state.has_resistance('Phys')
+        lambda state: state.has_resistance('Phys') and state.has_num_checks(a_tier_check_num)
     )
     set_rule(
-        world.get_boss('Dante 1'),
-        lambda state: state.has_resistance('Phys')
+        world.get_boss('Dante 2'),
+        lambda state: state.has_resistance('Mind') and state.has_num_checks(a_tier_check_num)
     )
     set_rule(
         world.get_boss('Beelzebub'),
-        lambda state: state.has_resistance('Death')
-    )
-    set_rule(
-        world.get_boss('Kaiwan'),
-        lambda state: state.has_resistance('Death')
+        lambda state: state.has_resistance('Death') and state.has_num_checks(s_tier_check_num)
     )
     set_rule(
         world.get_boss('Metatron'),
-        lambda state: state.has_resistance("Expel")
+        lambda state: state.has_resistance("Expel") and state.has_num_checks(s_tier_check_num)
     )
     set_rule(
         world.get_boss('Bishamon 1'),
-        lambda state: state.has_resistance("Fire")
+        lambda state: state.has_resistance("Phys")
     )
     set_rule(
         world.get_boss('Bishamon 2'),
-        lambda state: state.has_resistance("Fire")
+        lambda state: state.has_resistance("Fire") and state.has_num_checks(s_tier_check_num)
     )
     set_rule(
         world.get_boss('Jikoku'),
@@ -349,7 +378,7 @@ def set_rules(world):
     )
     set_rule(
         world.get_boss('Koumoku'),
-        lambda state: state.has_resistance("Force")
+        lambda state: state.has_resistance("Force") and state.has_num_checks(a_tier_check_num)
     )
     set_rule(
         world.get_boss('Zouchou'),
@@ -357,7 +386,7 @@ def set_rules(world):
     )
     set_rule(
         world.get_boss('Baal Avatar'),
-        lambda state: state.has_resistance("Curse")
+        lambda state: state.has_resistance("Curse") and state.has_num_checks(a_tier_check_num)
     )
 
     # Make sure Resist/Null/Absorb/Repel Phys bosses aren't in SMC

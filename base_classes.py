@@ -21,6 +21,7 @@ class World(object):
         self.battles = {}
         self.demon_generator = None
         self.demon_map = {}
+        self.skill_mutations = {}
 
         self.bonus_magatama = None
         self.seed = ""
@@ -29,8 +30,8 @@ class World(object):
         self.areas[name] = Area(name)
         return self.areas[name]
 
-    def add_flag(self, name, flag_id):
-        self.flags[name] = Flag(name, flag_id)
+    def add_flag(self, name, flag_id, additional_ids=None):
+        self.flags[name] = Flag(name, flag_id, additional_ids)
         return self.flags[name]
 
     def add_terminal(self, area, flag_id):
@@ -157,8 +158,6 @@ class Boss(object):
             return False
         elif isinstance(reward, Flag) and self.check.flag_rewards != []:
             return False
-        elif self.name == "Kagutsuchi" or self.check.name in ["Archangels"]:
-            return False
         return True            
 
     def add_reward(self, reward):
@@ -182,9 +181,10 @@ class Battle(object):
 
 
 class Flag(object):
-    def __init__(self, name, flag_id):
+    def __init__(self, name, flag_id, additional_ids=None):
         self.name = name
-        self.flag_id = flag_id
+        self.flag_id = flag_id 
+        self.additional_ids = additional_ids #Clean this up later, but for now I am lazy
         self.is_terminal = False
 
 
@@ -309,9 +309,47 @@ class Progression(object):
                 if resistance in m.resistances:
                     return True
         return False
+    
+    def has_num_checks(self, amount):
+        return sum(bool(x) for x in self.checks.values()) >= amount
 
     def can_warp(self):
         return self.has_checked('Specter 1')
 
     def has_all_magatamas(self):
         return all([m for i, m in self.magatamas.items() if i != 'Masakados'])
+    
+class Settings(object):
+    def __init__(self):
+        self.make_logs = True                    # Write various data to the logs/ folder
+        self.exp_modifier = 1                    # Mulitlpy EXP values of demons
+        self.macca_modifier = 1                  # Mulitlpy macca values of demons
+        self.visible_skills = False              # Make all learnable skills visable (like hardtype)
+        self.magic_pierce = False                # Make pierce affect most magic spells (like hardtype)
+        self.stock_healing = False               # Make AoE healing affect stock demons (like hardtype)
+        self.remove_hardmode_prices = False      # Remove the 3x multiplier on hard mode shop prices 
+        self.fix_inheritance = False             # Remove skill rank from inheritance odds and make demons able to learn all inheritable skills 
+        self.vanilla_tok = False                 # Do not randomize ToK bosses (Ahriman, Noah, Thor 2, Baal Avatar, Kagutsuchi)
+        self.random_music = False                # boss music is randomized
+        self.check_based_music = False           # boss music is based on location rather than boss demon
+        self.enemy_skill_scaling = False         # balances what skills enemy demons have to their level
+        self.fight_lucifer = False               # sets route to TDE, so you fight Lucifer after Kagutsuchi and can learn pierce
+        self.balance_pixie = False               # Normalizes the starting Pixie's level to 40-60 to keep early game more doable
+        self.low_level_pixie = False             # Keeps the starting Pixie at level 2. Only recommended for experienced players
+        self.menorah_groups = False              # Assings 3 menorah rewards to open Kalpas 2, 3, and 4
+        self.better_mutations = False            # Replaces bad skill mutations with improved skills
+        self.random_mutations = False            # Randomly determines skill mutations from a set list
+        self.unique_mutations = False            # Allows skills to mutate into unique skills (WARNING: Will make fusion worse)
+        self.yosuga = False                      # Sets ending to yosuga after lowering ToK
+        self.shijima = False                     # Sets ending to shijima after lowering ToK
+        self.musubi = False                      # Sets ending to musubi after lowering ToK
+        self.no_loa_progression = False          # Prevents Labyrinth of Amala from being required to clear the seed
+        self.vanilla_pyramidion = False          # Places the yahiro no himorogi at Samael's check
+        self.open_yurakucho = False              # Opens Yurakucho tunnel from the start instead of after Mifunashiro
+        self.open_ikebukuro = False              # Opens Ikebukuro tunnel from the start instead of with the Ongyo-Key
+        self.low_boss_safety = False             # Prevents S-Tier Bosses from appearing too early
+        self.high_boss_safety = False            # Prevents S and A Tier Bosses from appearing too early
+        self.no_level_safety = False             # The logic may expect you to visit high level areas early
+        self.no_magatama_safety = False          # The logic will not guarantee any magatamas for bosses
+        self.bosses_go_first_more_often = False  # No one will use this
+        self.export_to_hostfs = False            # Build to folder with HostFS patch instead of an .iso

@@ -1,0 +1,75 @@
+Forneus (Boss): 150 exp, level 8
+Black Rider (Boss): 5000 exp, level 61
+Legion (Boss): 354 exp, level 49
+Mara (Boss): 5000 exp, level 85
+Specter 1 (Boss): 100 exp, level 9
+Specter 1 6 Fuse (Boss): 800 exp, level 20
+Specter 1 4/5 Fuse (Boss): 500 exp, level 15
+Specter 1 2/3 Fuse (Boss): 300 exp, level 10
+Troll (Boss): 100 exp, level 38
+Matador (Boss): 1200 exp, level 30
+Red Rider (Boss): 5000 exp, level 55
+Power (Boss): 173 exp, level 33
+Orthrus (Boss): 150 exp, level 30
+Yaksini (Boss): 300 exp, level 35
+Thor 1 (Boss): 700 exp, level 35
+Dante 1 (Boss): 900 exp, level 36
+Daisoujou (Boss): 2000 exp, level 37
+Hell Biker (Boss): 2500 exp, level 42
+Berith (Boss): 1000 exp, level 30
+Succubus (Boss): 500 exp, level 37
+Kaiwan (Boss): 400 exp, level 40
+Ose (Boss): 1200 exp, level 40
+Kin-Ki (Boss): 1000 exp, level 50
+Sui-Ki (Boss): 1000 exp, level 50
+Fuu-Ki (Boss): 1000 exp, level 45
+Ongyo-Ki (Boss): 5000 exp, level 60
+Mizuchi (Boss): 1000 exp, level 30
+Pale Rider (Boss): 5000 exp, level 63
+Loa (Boss): 410 exp, level 53
+Black Frost (Boss): 5000 exp, level 70
+White Rider (Boss): 5000 exp, level 52
+Virtue (Boss): 256 exp, level 41
+Bishamon 1 (Boss): 10000 exp, level 66
+Atropos 2 (Boss): 3000 exp, level 55
+Clotho 2 (Boss): 1000 exp, level 45
+Lachesis 2 (Boss): 1000 exp, level 50
+Specter 2 (Boss): 2000 exp, level 40
+Girimehkala (Boss): 2000 exp, level 80 (Sakahagi makes it 12000 pretty sure)
+The Harlot (Boss): 8000 exp, level 69
+Specter 3 (Boss): 1500 exp, level 40
+Albion (Boss): 1800 exp, level 40
+Luvah (Boss): 1800 exp, level 30
+Urizen (Boss): 1800 exp, level 30
+Tharmas (Boss): 1800 exp, level 30
+Urthona (Boss): 1800 exp, level 30
+Aciel (Boss): 5000 exp, level 70
+Skadi (Boss): 5000 exp, level 75
+Futomimi (Boss): 10000 exp, level 57
+Raphael (Boss): 2000 exp, level 73
+Gabriel (Boss): 6000 exp, level 69
+Uriel (Boss): 2000 exp, level 69
+Trumpeter (Boss): 8000 exp, level 77
+Surt (Boss): 8000 exp, level 82
+Mada (Boss): 8000 exp, level 82
+Mot (Boss): 8000 exp, level 89
+Mithra (Boss): 8000 exp, level 65
+Samael (Boss): 9000 exp, level 75
+Dante 2 (Boss): 10000 exp, level 60
+Beelzebub Fly (Boss): 10000 exp, level 95
+Metatron (Boss): 10000 exp, level 95
+Ahriman 1st Form (Boss): 10000 exp, level 80
+Ahriman 2nd Form (Boss): 10000 exp, level 99
+Noah 1st Form (Boss): 10000 exp, level 80
+Noah 2nd Form (Boss): 10000 exp, level 80
+Thor 2 (Boss): 2000 exp, level 80
+Baal Avatar (Boss): 10000 exp, level 85
+Ose Hallel (Boss): 0 exp, level 70
+Flauros Hallel (Boss): 0 exp, level 70
+Kagutsuchi 1st Form (Boss): 10000 exp, level 85
+Kagutsuchi 2nd Form (Boss): 3000 exp, level 90
+Lucifer (Boss): 65535 exp, level 99
+Bishamon 2 (Boss): 10000 exp, level 99
+Jikoku (Boss): 5000 exp, level 99
+Koumoku (Boss): 5000 exp, level 99
+Zouchou (Boss): 5000 exp, level 99

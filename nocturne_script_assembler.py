@@ -330,6 +330,25 @@ class bf_script:
         self.sections[MESSAGES].rolling_pointer += delta_bytes
         self.size += delta_bytes
         return 0
+    #Names are just strings so we can find the difference in length. For now don't use special characters like Isamu's name
+    #Update name_pointers after index, the messages size and rolling pointer, and the strings offset
+    def changeNameByIndex(self, new_name, index):
+        delta_bytes = len(new_name) - len(self.sections[MESSAGES].names.names[index])
+        #print(str(delta_bytes) + " is the difference in name length")
+        while delta_bytes % 4 != 0: #4 seems to be a magic number, so let's keep length a multiple of 4 from the original
+            new_name = new_name + " "
+            delta_bytes += 1
+        self.sections[MESSAGES].names.names[index] = new_name
+        for i in range(index + 1, len(self.sections[MESSAGES].names.names_pointers)):
+            self.sections[MESSAGES].names.names_pointers[i] = self.sections[MESSAGES].names.names_pointers[i] + delta_bytes
+        self.sections[MESSAGES].m_size += delta_bytes
+        self.sections[MESSAGES].rolling_pointer += delta_bytes
+        #self.sections[MESSAGES].rolling_size += delta_bytes
+        self.sections[STRINGS].offset += delta_bytes
+        return 0
+    def changeNameByLookup(self, old_name, new_name):
+        index = self.sections[MESSAGES].names.names.index(old_name)
+        return self.changeNameByIndex(new_name, index)
     def appendProc(self, instructions, relative_labels, proc_label_str):
         #TODO: integrity check of proc_label being a valid label
         self.sections[PROC_LABELS].labels.append(label(proc_label_str,len(self.sections[BYTECODE].instructions)))

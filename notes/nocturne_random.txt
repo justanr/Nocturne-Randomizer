@@ -6,6 +6,8 @@ Nocturne Notes (offsets are based on SLUS_209.11)
 	383 total demons
 	207 real demons, rest are bosses
 
+	Start of skill changes are at 0x0023AC20, 0xDC total length (4h - 2 bytes skill id from, 2 bytes skill id to)
+
 	Start of skills 0x00234CF4
 	
 	start of battles at 0x002AFFE0

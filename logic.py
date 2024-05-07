@@ -1,4 +1,5 @@
 import copy
+from logging import config
 import random
 import logging
 
@@ -31,10 +32,10 @@ def init_magatamas(world):
     world.add_magatama('Sophia', ['Expel'], 22)
     world.add_magatama('Gaea', ['Phys'], 23)
     world.add_magatama('Kailash', [], 24)
-    world.add_magatama('Masakados', [], 25)
+    world.add_magatama('Masakados', ['Phys', 'Fire', 'Ice', 'Force', 'Elec', 'Expel', 'Death', 'Mind', 'Nerve', 'Curse'], 25)
 
 
-def create_areas(world):
+def create_areas(world, config_settings):
     smc = world.add_area('SMC')
     world.add_terminal(smc, 0x441)
     world.add_check('Forneus', smc, 2818548)
@@ -139,6 +140,11 @@ def create_areas(world):
     world.add_check("Dante 2", lab_of_amala, 2857346)
     world.add_check("Beelzebub", lab_of_amala, 2835116)
     world.add_check("Metatron", lab_of_amala, 2835078)
+    
+    if config_settings.menorah_groups:
+        world.add_flag('Kalpa 2 Menorahs', 0x3e7, additional_ids=[0x3e8]) #3e7 is Daisojou, 3e8 is Hell Biker
+        world.add_flag('Kalpa 3 Menorahs', 0x3e4, additional_ids=[0x3e3, 0x3e2]) #3e4 is White Rider, 3e3 is Red Rider, 3e2 is Black Rider
+        world.add_flag('Kalpa 4 Menorahs', 0x3e1, additional_ids=[0x3e6, 0x3e5, 0x3eb]) #3e1 is Pale Rider, 3e6 is Harlot, 3e5 is Trumpeter, 3eb is Dante 2
 
     tok = world.add_area("ToK")
     world.add_check("Ahriman", tok, 2855712)
@@ -152,10 +158,12 @@ def create_areas(world):
     earthstone = world.add_flag('Earthstone', None)
     netherstone = world.add_flag('Netherstone', None)
     heavenstone = world.add_flag('Heavenstone', None)
-    world.get_check('Samael').flag_rewards = [pyramidion]
+
     world.get_check('Ahriman').flag_rewards = [earthstone]
     world.get_check('Noah').flag_rewards = [netherstone]
     world.get_check('Baal Avatar').flag_rewards = [heavenstone]
+    if config_settings.vanilla_pyramidion:
+        world.get_check('Samael').flag_rewards = [pyramidion]
 
     bandou = world.add_area('Bandou Shrine')
     world.add_check("Bishamon 2", bandou, 2848606)
@@ -167,11 +175,11 @@ def create_areas(world):
 # Bosses not to randomize
 BANNED_BOSSES = ["Lucifer"]
 
-def create_world():
+def create_world(config_settings):
     world = World()
-    create_areas(world)
+    create_areas(world, config_settings)
     init_magatamas(world)
-    rules.set_rules(world)
+    rules.set_rules(world, config_settings)
     world.state.init_checks()
 
     return world
@@ -196,30 +204,33 @@ def randomize_bosses(boss_pool, check_pool, logger, attempts=100):
 
 # returns a reward that unlocks new checks
 # assumes with the current state there are no completeable checks
-def find_progressive_reward(state, check_pool, reward_pool):
+def find_progressive_reward(state, check_pool, reward_pool, config_settings):
     for r in reward_pool:
         state.get_reward(r)
-        completeable_checks = [c for c in check_pool if c.can_reach(state) and c.boss.can_beat(state) and c.name not in ["Archangels"] and c.boss.name != "Kagutsuchi"] #Remove broken reward checks
+        completeable_checks = [c for c in check_pool if c.can_reach(state) and c.boss.can_beat(state)]
         can_progress = bool(completeable_checks)
-        if can_progress:
+        if can_progress or (r.name in ["Kalpa 2 Menorahs"] and state.has_checked("Matador")):
             return r
         else:
             state.remove_reward(r)
     return None
 
-def randomize_world(world, logger, config_vanilla_tok, attempts=100):
+def randomize_world(world, logger, config_settings, attempts=100):
     state = world.state
     area_pool = world.get_areas()
     flag_pool = world.get_flags()
     check_pool = world.get_checks()
     magatama_pool = world.get_magatamas()
     boss_pool = world.get_bosses()
+    no_progression_areas = ["ToK", "Bandou Shrine"]
+    if config_settings.no_loa_progression:
+        no_progression_areas.append("Labyrinth of Amala")
     # Remove banned bosses from randomized pool
     vanilla = []
     for banned in BANNED_BOSSES:
         vanilla.append(banned)
     #If vanilla tower flag is set, add tok bosses to the ban list
-    if config_vanilla_tok:
+    if config_settings.vanilla_tok:
         vanilla.append("Ahriman")
         vanilla.append("Noah")
         vanilla.append("Thor 2")
@@ -243,10 +254,13 @@ def randomize_world(world, logger, config_vanilla_tok, attempts=100):
     state.get_magatama('Marogareh')
     magatama_pool.remove(world.get_magatama('Marogareh'))
     # magatama_pool.remove(world.get_magatama('Gaea'))
+    if config_settings.no_magatama_safety:
+        state.get_magatama("Masakados") #Pretend like all resistances are acquired
     magatama_pool.remove(world.get_magatama('Masakados'))
     # remove the fixed flags and terminal flags
     flag_pool = [f for f in flag_pool if not f.is_terminal]
-    flag_pool.remove(world.get_flag('Pyramidion'))
+    if config_settings.vanilla_pyramidion:
+        flag_pool.remove(world.get_flag('Pyramidion'))
     flag_pool.remove(world.get_flag('Earthstone'))
     flag_pool.remove(world.get_flag('Netherstone'))
     flag_pool.remove(world.get_flag('Heavenstone'))
@@ -317,9 +331,9 @@ def randomize_world(world, logger, config_vanilla_tok, attempts=100):
         
         # try to assign rewards that unlock progression 
         can_progress = False
-        shuffled_bosses = copy.copy([b for b in bosses_progressed if b.check.area.name != 'ToK'])
+        shuffled_bosses = copy.copy([b for b in bosses_progressed if b.check.area.name not in no_progression_areas])
         random.shuffle(shuffled_bosses)
-        chosen_reward = find_progressive_reward(state, check_pool, reward_pool)
+        chosen_reward = find_progressive_reward(state, check_pool, reward_pool, config_settings)
         if chosen_reward == None or not bosses_progressed:
             logger.info("Re-randomizing unchecked bosses\n")
             new_boss_pool = []
@@ -337,12 +351,12 @@ def randomize_world(world, logger, config_vanilla_tok, attempts=100):
 
         chosen_boss = None
         # try to give the chosen reward to a boss with no magatama or flag reward 
-        no_reward_boss_pool = [b for b in shuffled_bosses if b.reward == None and b.check.flag_rewards == [] and b.name != "Kagutsuchi" and b.check.name not in ["Archangels"]]
+        no_reward_boss_pool = [b for b in shuffled_bosses if b.reward == None and b.check.flag_rewards == []]
         if no_reward_boss_pool != []:
             chosen_boss = random.choice(no_reward_boss_pool)
         else:
             for b in shuffled_bosses:
-                if b.can_add_reward(chosen_reward) and b.name != "Kagutsuchi" and b.check.name not in ["Archangels"]:
+                if b.can_add_reward(chosen_reward):
                     chosen_boss = b
                     break
             else:
@@ -359,12 +373,12 @@ def randomize_world(world, logger, config_vanilla_tok, attempts=100):
         reward = reward_pool.pop()
         chosen_boss = None
         # try to give the chosen reward to a boss with no magatama or flag reward 
-        no_reward_boss_pool = [b for b in bosses_progressed if b.check.area.name != 'ToK' and b.reward == None and b.check.flag_rewards == [] and b.name != "Kagutsuchi" and b.check.name not in ["Archangels"]]
+        no_reward_boss_pool = [b for b in bosses_progressed if b.check.area.name != 'ToK' and b.reward == None and b.check.flag_rewards == []]
         if no_reward_boss_pool != []:
             chosen_boss = no_reward_boss_pool.pop()
         else:
             for b in bosses_progressed:
-                if b.check.area.name != 'ToK' and b.can_add_reward(reward) and b.name != "Kagutsuchi" and b.check.name not in ["Archangels"]:
+                if b.check.area.name != 'ToK' and b.can_add_reward(reward):
                     chosen_boss = b
                     break
             else:
@@ -392,5 +406,5 @@ if __name__ == '__main__':
 
     world = None
     while world == None:
-        world = create_world()
-        world = randomize_world(world, logger)
+        world = create_world(Settings())
+        world = randomize_world(world, logger, Settings()) #These lines should never get run I think

@@ -88,6 +88,8 @@ minimum_level_diff = 4
 #level range for creating a new demon from existing demons
 logical_lowfuse_min = 3
 logical_lowfuse_max = 8
+balanced_pixie_level_min = 41
+balanced_pixie_level_max = 60
 
 def avg_fuse(d1,d2):
     return math.ceil((d1+d2)/2.0)
@@ -219,6 +221,32 @@ class all_demons:
         ret[3] = r
         return ret
         
+    #Choose a level between 40 and 60 to assign the starting Pixie to before othe randomizations
+    def randomize_starting_pixie(self):
+        pixie_list = [x for x in self.demons if x.name == "Pixie"]
+        pixie = pixie_list[0]
+        if pixie.level < balanced_pixie_level_min or pixie.level > balanced_pixie_level_max:
+            swappable_list = [x for x in self.demons if x.level >= balanced_pixie_level_min and x.level <= balanced_pixie_level_max]
+            swap_index = random.randint(0, len(swappable_list) - 1)
+            swap_demon = swappable_list[swap_index]
+            temp_level = swap_demon.level
+            swap_demon.level = pixie.level
+            pixie.level = temp_level
+            temp_race = swap_demon.race
+            swap_demon.race = pixie.race
+            pixie.race = temp_race
+    def low_level_pixie(self):
+        pixie_list = [x for x in self.demons if x.name == "Pixie"]
+        pixie = pixie_list[0]
+        swappable_list = [x for x in self.demons if x.level == 2]
+        swap_index = random.randint(0, len(swappable_list) - 1)
+        swap_demon = swappable_list[swap_index]
+        temp_level = swap_demon.level
+        swap_demon.level = pixie.level
+        pixie.level = temp_level
+        temp_race = swap_demon.race
+        swap_demon.race = pixie.race
+        pixie.race = temp_race
     #set aside 8 for elements/mitama, reserve 4 pairs below for elemental fusions
     #16 demons below the threshold. 13th-16th are mitamas. 12th is elemental, 9th-11th is next, 6th-8th is next, 3rd-5th is next. Other two not picked must go to the previous elemental.
     #returns 8 demons used in logic to fuse the elementals
@@ -419,6 +447,7 @@ class all_demons:
                 if fusion_result[self.initial_ten_demons[i].race][self.initial_ten_demons[j].race] > 0 and not self.fuse_demon(self.initial_ten_demons[i],self.initial_ten_demons[j],allow_underfuse=True):
                     self.add_demon(demon(self.spare_levels[0],self.grab_name(),fusion_result[self.initial_ten_demons[i].race][self.initial_ten_demons[j].race]))
                     del self.spare_levels[0]
+    
     #Takes "spare_levels" and fills in each of the demons in randomly.
     #It prioritizes fusion results of demons that already exist
     #It does not take elementals into account as that's a previous step
@@ -429,6 +458,7 @@ class all_demons:
             for d2 in self.demons:
                 #Not the same race, not elemental. Fiend ok. Must produce result.
                 if d1.race >= race_min and d1.race <= race_fiend and d2.race >= race_min and d2.race <= race_fiend and d1.race != d2.race and fusion_result[d1.race][d2.race] > 0:
+                    #if (not config_settings.balance_pixie) or (d1.name != "Pixie" and d2.name != "Pixie"): #Ban pixie from this logic if generated early
                     existing_fusion_combos.append((d1,d2))
         #hopefully existing_fusion_combos will never be empty and it'll be spare_levels to be empty
         #remaining_fiends = fiend_count
@@ -543,24 +573,34 @@ class all_demons:
         if allow_underfuse and ret_demon is None and high_demon is not None:
             return high_demon
         return ret_demon
-    def generate(self, generation_attempts=100):
+    
+    def generate(self, config_settings=None, generation_attempts=100):
         if generation_attempts == 0:
             print("Failed to generate fusion logic.")
             return -1
         backup_names = copy.deepcopy(self.spare_names)
         backup_levels = copy.deepcopy(self.spare_levels)
         ret1 = self.randomize_elemental_results()
+
         ret2 = self.randomize_elementals_mitamas(ret1)
+        
         if ret2 == 0:
             print("Error(s) in generation. Regenerating...")
             self.__init__(backup_levels,backup_names)
-            return self.generate(generation_attempts-1)
+            return self.generate(config_settings, generation_attempts-1)
         self.find_base_ten_demons(ret2)
+        
         self.fill_demon_slots()
+        
+        if config_settings.balance_pixie:
+            self.randomize_starting_pixie()
+        elif config_settings.low_level_pixie:
+            self.low_level_pixie()
+                
         if self.generation_error:
             print("Error(s) in generation. Regenerating...")
             self.__init__(backup_levels,backup_names)
-            return self.generate(generation_attempts-1)
+            return self.generate(config_settings, generation_attempts-1)
         return 0
     
 class demon:

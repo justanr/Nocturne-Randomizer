@@ -1,0 +1,13 @@
+All vanilla demon names and levels are set in a list
+If pixie is balanced, choose a level for pixie first
+When a demon is added, remove from the level and name list
+Create the element matrix and choose 4 races that fuse into the elements
+Set levels for the mitamas and elements
+Set low levels for 8 demons to fuse into the elements
+Determine the base 10 demons and ensure fusions for any other demons that are not in the base 10
+Determine all other demons except those who go over fiends
+Determine fiends
+Now generate the demon permutation:
+Prevent phys immune in first 10 demons
+Swap demons to make elements, mitamas, and pixie the correct level
+Balance all of the new demons

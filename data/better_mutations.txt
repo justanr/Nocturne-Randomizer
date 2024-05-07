@@ -1,0 +1,115 @@
+False,Agi,Agilao,Agidyne
+False,Bufu,Bufula,Bufudyne
+False,Zan,Zanma,Zandyne
+False,Zio,Zionga,Ziodyne
+False,Fire Breath,Hellfire,Prominence
+False,Ice Breath,Glacial Blast
+False,Wing Buffet,Tornado
+False,Shock,Bolt Storm
+False,Zandyne,Wind Cutter
+False,Hama,Hamaon
+False,Mudo,Mudoon
+False,Evil Gaze,Hell Gaze
+False,Dia,Diarama
+False,Media,Mediarama
+False,Recarm,Samrecarm
+False,Megido,Megidola,Megidolaon
+False,Lunge,Hell Thrust
+False,Tempest,Hades Blast
+False,Berserk,Deathbound
+False,Heat Wave,Hassohappa
+False,Feral Claw,Iron Claw
+False,Feral Bite,Hell Fang
+False,Sukunda,Fog Breath
+False,Tarunda,War Cry
+False,Rakunda,Debilitate
+False,Life Bonus,Life Gain,Life Surge
+False,Mana Bonus,Mana Gain,Mana Surge
+False,Mana Drain,Life Drain
+False,Deathtouch,Life Drain
+False,Counter,Retaliate,Avenge
+False,Might,Dark Might
+False,Anti Fire,Void Fire
+False,Anti Ice,Void Ice
+False,Anti Force,Void Force
+False,Anti Elec,Void Elec
+False,Anti Phys,Void Phys
+False,Anti Mind,Void Mind
+False,Anti Nerve,Void Nerve
+False,Anti Curse,Void Curse
+False,Anti Expel,Void Expel
+False,Anti Death,Void Death
+False,Void Fire,Fire Drain
+False,Void Ice,Ice Drain
+False,Void Force,Force Drain
+False,Void Elec,Elec Drain
+False,Void Phys,Phys Drain
+False,Void Fire,Fire Repel
+False,Void Ice,Ice Repel
+False,Void Force,Force Repel
+False,Void Elec,Elec Repel
+False,Void Phys,Phys Repel
+False,Maragi,Maragion,Maragidyne
+False,Mabufu,Mabufula,Mabufudyne
+False,Mazan,Mazanma,Mazandyne
+False,Mazio,Mazionga,Maziodyne
+False,Makajamon,Dismal Tune
+False,Sonic Wave,Tentarafoo
+False,Panic Voice,Tentarafoo
+False,Mahama,Mahamaon
+False,Mamudo,Mamudoon
+False,Might,Bright Might
+False,Patra,Me Patra
+False,Needle Rush,Toxic Sting,Stun Needle,Arid Needle
+False,Feral Claw,Venom Claw,Stun Claw
+False,Feral Bite,Venom Bite,Charm Bite,Stun Bite,Stone Bite
+False,Heat Wave,Blight
+False,Mighty Gust,Dark Sword
+False,Brutal Slash,Guillotine
+False,Brutal Slash,Stasis Blade
+False,Seduce,Soul Recruit
+False,Wooing,Mischief
+False,Detain,Wine Party
+False,Persuade,Wine Party
+False,Arbitration,Wine Party
+False,Last Resort,Sacrifice
+False,Last Resort,Kamikaze
+False,Me Patra,Prayer
+True,Agidyne,Ragnarok
+True,Agidyne,Magma Axis
+True,Maragion,Hell Burner
+True,Mazionga,Roundtrip
+True,Mazanma,Hell Exhaust
+True,Mazanma,Whirlwind
+True,Mazandyne,Wet Wind
+True,Hamaon,God's Bow
+True,Radiance,Starlight
+True,Holy Wrath,Godly Light
+True,Mamudoon,Death Flies
+True,Megidolaon,Death Flies
+True,Megidolaon,Beast Roar
+True,Megidolaon,Showtime
+True,Tempest,Hell Spin
+True,Heat Wave,Andalucia
+True,Needle Rush,E&I
+True,Hell Thrust,Rebellion
+True,Hell Thrust,Stinger
+True,Hell Thrust,Divine Shot,Spiral Viper,Freikugel
+True,Chaos Blade,Terror Blade
+True,Heat Wave,Xeros-Beat
+True,Heat Wave,Deadly Fury
+True,Heat Wave,Javelin Rain
+True,Heat Wave,Oni-Kagura
+True,Hades Blast,Tentacle
+True,Hades Blast,Earthquake
+True,Hades Blast,Gaea Rage
+True,Hades Blast,Showtime
+True,Makajamon,Soul Divide
+True,Dormina,Preach
+True,Allure,Death Lust
+True,Life Drain,Meditation
+True,Sonic Wave,Intoxicate
+True,Panic Voice,Wild Dance
+True,Taunt,Provoke
+True,Dark Pledge,Death Pact
+True,Kidnap,Death Pact

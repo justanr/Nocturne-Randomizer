@@ -1,9 +1,11 @@
 # code modified from https://github.com/samfin/mmbn3-random/tree/cleanup
 import copy
+from pickletools import uint1
 import struct
 import re
 import random
 import os
+from tokenize import Special
 
 import randomizer
 import races
@@ -18,9 +20,11 @@ all_demons = {}
 all_magatamas = {}
 all_battles = {}
 all_skills = {}
+gathering_demons = {}
+special_gathering_map = {}
 
 # demons/bosses that absorb/repel/null phys
-PHYS_INVALID_DEMONS = [2, 14, 87, 93, 98, 104, 105, 144, 155, 172, 202, 269, 274, 276, 277, 333, 334, 352]
+PHYS_INVALID_DEMONS = [2, 14, 87, 93, 98, 104, 105, 144, 155, 172, 202, 206, 269, 274, 276, 277, 333, 334, 352]
 
 # demons/bosses that are normally in the hospital/shibuya
 BASE_DEMONS = [61, 137, 92, 97, 131, 91, 126, 103, 135, 136]
@@ -36,7 +40,6 @@ DRAGON_EYE_DEMONS = {#[73, 56, 100, 113, 116, 110, 89, 144, 71]
     144: 0x6a, #Arahabaki
     71: 0x6c #Ose
 }
-
 
 SHADY_BROKER = {
     167: 208,        # Pisaca
@@ -60,7 +63,7 @@ def load_demons(rom):
 
         demon_offset = rom.r_offset
         _, flag, _, race_id, level, hp, _, mp, _, demon_id, strength, _, magic, vitality, agility, luck, battle_skills, _, macca_drop, exp_drop, _ = struct.unpack('<12sH2sBBHHHHHBBBBBB12s8sHHH', rom.read(0x3C))
-
+        
         # skip entry if it's a garbage/unknown demon
         if race_id == 0 or demon_name == '?':
             continue
@@ -106,6 +109,24 @@ def load_demons(rom):
 
         if demon_id in SHADY_BROKER.keys():
             demon.shady_broker = SHADY_BROKER[demon_id]
+            
+        for i in range(3): #Find demons that naturally use gathering and store the skill data
+            for j in range(5):
+                offset = (demon.ai_offset + 0x28) + (i * 0x28) + j * 0x8
+                skill_odds = rom.read_halfword(offset)
+                skill_id = rom.read_halfword(offset + 0x2)
+                if skill_id >= 0x9000 and skill_id <= 0xbfff and (demon_id not in gathering_demons or gathering_demons[demon_id]["odds"] >= skill_odds):
+                    summoned_demon = skill_id % 0x1000
+                    if summoned_demon != demon_id:
+                        special_gathering_map[summoned_demon] = 0x01
+                    skill_prefix = 0x9000
+                    if skill_id >= 0xa000:
+                        skill_prefix = 0xa000
+                    if skill_id >= 0xb000:
+                        skill_prefix = 0xb000
+                    gathering_data = {"ai_group": i, "odds": skill_odds, "summon_id": summoned_demon, "skill_prefix": skill_prefix}
+                    gathering_demons[demon_id] = gathering_data
+                    break
 
         all_demons[demon_id] = demon
 
@@ -181,9 +202,23 @@ def load_skills(rom):
         skill.level = skill_level
 
         all_skills[skill_id] = skill
+        
+def load_skill_changes(rom):
+    skill_change_offset = 0x0023AC20
+    rom.seek(skill_change_offset)
+    with open("./logs/skill_changes.txt", 'w') as debug_file:
+        for i in range(0, 55):
+            debug_file.write(all_skills[rom.read_halfword()].name + " to " + all_skills[rom.read_halfword()].name + "\n")
 
 def lookup_skill(ind):
     return all_skills.get(ind)
+
+def lookup_skill_by_name(skill_name):
+    for key, skill in all_skills.items():
+        if skill.name == skill_name:
+            return skill
+    print("ERROR: Skill name was misspelled: " + skill_name)
+    return None
 
 def load_magatamas(rom):
     magatama_offset = 0x0023AE3A
@@ -231,9 +266,9 @@ def load_battles(rom):
         for j in range(0, 18, 2):
             enemy_id = rom.read_halfword(offset + 6 + j)
             enemies.append(enemy_id)
-            #if enemy_id == 294:
-            #    print("big specter is here")
-            #    print(rom.read_halfword(offset + 0x02))
+            #if enemy_id == 0x12b or enemy_id == 0x163:
+            #    print("Sakahagi, allegedly")
+            #    print(offset)
 
         battle = Battle(offset)
         battle.enemies = enemies
@@ -287,6 +322,7 @@ def write_demon(rom, demon, offset):
 
 
 def write_demons(rom, new_demons):
+    find_special_gatherings(new_demons)
     for demon in new_demons:
         write_demon(rom, demon, demon.offset)
 
@@ -295,6 +331,11 @@ def write_demons(rom, new_demons):
             write_demon(rom, demon, shady_broker_offset)
             # set the race_id back to 0 on the shady_broker demons to disable them from fusions and stuff
             rom.write_byte(0, shady_broker_offset + 0x10)
+
+def find_special_gatherings(new_demons):
+    for demon in new_demons:
+        if demon.old_id in special_gathering_map:
+            special_gathering_map[demon.old_id] = demon.ind
 
 def write_skills(rom, demon):
     # zero out old demon skills
@@ -316,11 +357,15 @@ def write_ai(rom, demon):
     else:
         rom.write_halfword(DRAGON_EYE_DEMONS[demon.old_id], demon.ai_offset)
 
+    gathering_data = None
+    if demon.old_id in gathering_demons:
+        gathering_data = gathering_demons[demon.old_id]
+
     # todo: make generating odds more random
     total_odds = [
         [100,],
         [50, 50],
-        [40, 30, 30],
+        [34, 33, 33],
         [25, 25, 25, 25],
         [20, 20, 20, 20, 20],
     ]
@@ -329,13 +374,23 @@ def write_ai(rom, demon):
     for i in range(3):
         skill_pool = copy.copy(demon.battle_skills)
 
+        if gathering_data: #Add gathering to the skill pool if appropriate
+            summoned_demon = demon.old_id
+            if summoned_demon != gathering_data["summon_id"]:
+                summoned_demon = special_gathering_map[gathering_data["summon_id"]]
+            else:
+                summoned_demon = demon.ind
+            gathering_skill_id = gathering_data["skill_prefix"] + summoned_demon
+            skill_pool.append(gathering_skill_id)
+
         # add basic attack to skill pool and shuffle
         skill_pool.append(0x8000)
         random.shuffle(skill_pool)
 
         # can only write a max of 5 skills per set
         num_of_skills = min(len(skill_pool), 5)
-        odds = total_odds[num_of_skills - 1]
+        
+        odds = assign_odds(num_of_skills, 100)
 
         # zero out old demon ai
         offset = (demon.ai_offset + 0x28) + (i * 0x28)
@@ -345,6 +400,37 @@ def write_ai(rom, demon):
         # write the new demon ai
         for o, s in zip(odds, skill_pool):
             rom.write(struct.pack('<HHI', o, s, 0))
+            
+def assign_odds(num_skills, total_odds):
+    odds = []
+    remaining_odds = total_odds
+    remaining_skills = num_skills
+    for i in range(num_skills - 1):
+        average = round(remaining_odds / remaining_skills)
+        minimum = 5
+        maximum = remaining_odds - 5 * (remaining_skills - 1)
+        random_direction = random.choice(["average", "higher", "lower"])
+        chosen_odds = 0
+        if random_direction == "average":
+            chosen_odds = average
+        elif random_direction == "lower":
+            chosen_odds = max(random.randint(minimum, average), random.randint(minimum, average))
+        else:
+            chosen_odds = min(random.randint(average, maximum), random.randint(average, maximum))
+        odds.append(chosen_odds)
+        remaining_odds -= chosen_odds
+        remaining_skills -= 1
+        if remaining_odds <= 0:
+            print("ERROR: ran out of odds in ai selection")
+    odds.append(remaining_odds)
+    return odds
+            
+def write_skill_changes(rom, new_mutations):
+    skill_change_offset = 0x0023AC20
+    rom.seek(skill_change_offset)
+    for base_skill, enhanced_skill in new_mutations.items():
+        rom.write_halfword(lookup_skill_by_name(base_skill).ind)
+        rom.write_halfword(lookup_skill_by_name(enhanced_skill).ind)
 
 def write_magatamas(rom, new_magatams):
     for magatama in new_magatams:
@@ -390,6 +476,11 @@ def write_battles(rom, new_battles, preserve_boss_arenas=False):
         #rom.write_byte(1, offset + 0x01)       # Amount
         rom.write_halfword(r, offset + 0x02)
     '''
+def patch_incubus_koppa(rom, demon_map):
+    ik_offset = 0x002B1540 #Battle with koppa and incubus
+    rom.write_halfword(demon_map[0x76], ik_offset + 0x8)#incubus
+    rom.write_halfword(demon_map[0x34], ik_offset + 0xa)#koppa
+    pass
 
 def patch_fix_tutorials(rom, tutorial_ais, dds3):
     # currently demon specific sounds effects don't work for the copied demons
@@ -398,6 +489,7 @@ def patch_fix_tutorials(rom, tutorial_ais, dds3):
     tut_preta.ai_offset = 0x002999E0 + (0x16A * 0xA4)
     tut_preta.offset = (0x0024A7F0 + (0x16A * 0x3C)) - 0x3C
     tut_preta.is_boss = True
+    tut_preta.race = 39
     all_demons[0x16A] = tut_preta
     write_demon(rom, tut_preta, tut_preta.offset)
     rom.write(tutorial_ais[0], tut_preta.ai_offset)
@@ -409,6 +501,7 @@ def patch_fix_tutorials(rom, tutorial_ais, dds3):
     tut_kodama.ai_offset = 0x002999E0 + (0x16B * 0xA4)
     tut_kodama.offset = (0x0024A7F0 + (0x16B * 0x3C)) - 0x3C
     tut_kodama.is_boss = True
+    tut_kodama.race = 35
     all_demons[0x16B] = tut_kodama
     write_demon(rom, tut_kodama, tut_kodama.offset)
     rom.write(tutorial_ais[1], tut_kodama.ai_offset)
@@ -420,6 +513,7 @@ def patch_fix_tutorials(rom, tutorial_ais, dds3):
     tut_willy.ai_offset = 0x002999E0 + (0x16C * 0xA4)
     tut_willy.offset = (0x0024A7F0 + (0x16C * 0x3C)) - 0x3C
     tut_willy.is_boss = True
+    tut_willy.race = 36
     all_demons[0x16C] = tut_willy
     write_demon(rom, tut_willy, tut_willy.offset)
     rom.write(tutorial_ais[2], tut_willy.ai_offset)
@@ -534,13 +628,13 @@ def fix_specter_1_reward(rom, reward):
         
 def fix_girimehkala_reward(rom, reward):
     # fix magatama drop for vanilla girimehkala
-    fused_reward_offsets = [0x002B2900]
+    fused_reward_offsets = [0x002B30B8]
     for offset in fused_reward_offsets:
         rom.write_halfword(reward, offset)
 
 def fix_ahriman_reward(rom, reward):
     # fix magatama drop for ahriman, 0x002B3176 is second fight
-    fused_reward_offsets = [0x002B9322]
+    fused_reward_offsets = [0x002B9322] #Notably the battle offset is +0x2 to get the reward byte
     for offset in fused_reward_offsets:
         rom.write_halfword(reward, offset)
 
@@ -628,11 +722,13 @@ def write_seed_strings(rom, seed):
     rom.write(seed_msg.encode(), 0x43EEA8)
 
 def load_all(rom):
+    load_skills(rom)#Loading this first for logging purposes
     load_demons(rom)
     load_races()
-    load_skills(rom)
+    #load_skills(rom)
     load_magatamas(rom)
     load_battles(rom)
+    #load_skill_changes(rom) #Temporary logging function
 
 def write_all(rando, world):
     rom = rando.rom
@@ -647,25 +743,28 @@ def write_all(rando, world):
     write_demons(rom, world.demons.values())
     write_magatamas(rom, world.magatamas.values())
     write_battles(rom, world.battles.values())
+    
+    if world.skill_mutations:
+        write_skill_changes(rom, world.skill_mutations)
 
     # make the random mitamas and elementals not show up in rag's shop
     apply_asm_patch(rom, os.path.join(PATCHES_PATH, 'rags.txt'))
     # fix most non-recruitable demons and demon races
     apply_asm_patch(rom, os.path.join(PATCHES_PATH, 'recruit.txt'))
     # make the pierce skill work on magic
-    if rando.config_magic_pierce:
+    if rando.config_settings.magic_pierce:
         apply_asm_patch(rom, os.path.join(PATCHES_PATH, 'pierce.txt'))
     # make aoe healing work on the stock demons
-    if rando.config_stock_healing:
+    if rando.config_settings.stock_healing:
         apply_asm_patch(rom, os.path.join(PATCHES_PATH, 'healing.txt'))
     # make learnable skills always visible
-    if rando.config_visible_skills:
+    if rando.config_settings.visible_skills:
         apply_asm_patch(rom, os.path.join(PATCHES_PATH, 'skills.txt'))
     # remove hard mode price multiplier
-    if rando.config_remove_hardmode_prices:
+    if rando.config_settings.remove_hardmode_prices:
         apply_asm_patch(rom, os.path.join(PATCHES_PATH, 'prices.txt'))
     # remove skill rank from inheritance odds and make demons able to learn all inheritable skills 
-    if rando.config_fix_inheritance:
+    if rando.config_settings.fix_inheritance:
         apply_asm_patch(rom, os.path.join(PATCHES_PATH, 'inherit.txt'))
     # apply TGE's hostFS patch 
     if rando.config_export_to_hostfs:
@@ -689,6 +788,8 @@ def write_all(rando, world):
     fix_mada_summon(rom, world.demons.values())
     # replace the demons summoned by the nihilo minibosses
     fix_nihilo_summons(rom, world.demon_map)
+    # replace koppa and incubus in the nihilo fight
+    patch_incubus_koppa(rom, world.demon_map)
     # fix the magatama drop on the fused versions of specter 1
     for b in world.battles.values():
         if b.offset == world.get_boss("Specter 1").check.offset:
@@ -697,9 +798,9 @@ def write_all(rando, world):
         elif b.offset == world.get_check("Girimehkala").offset:
             if b.reward:
                 fix_girimehkala_reward(rom, b.reward)
-        elif b.offset == world.get_check("Futomimi").offset:
-            if b.reward:
-                fix_angel_reward(rom, b.reward)
+        #elif b.offset == world.get_check("Futomimi").offset:
+        #    if b.reward:
+        #        fix_angel_reward(rom, b.reward)
         elif b.offset == world.get_boss("Ahriman").check.offset:
             if b.reward:
                 fix_ahriman_reward(rom, b.reward)
