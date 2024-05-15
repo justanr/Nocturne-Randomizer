@@ -63,4 +63,4 @@ If don't want to worry about choosing individual settings, you can select one of
 * No Level Safety - The logic normally doesn't expect you to do something like clear Labyrinth of Amala or fight the riders before reaching Asakusa. This removes all of those safety measures
 * No Magatama Safety - Most late-game bosses will guarantee a specific magatama resistance in logic. With this setting, that no longer happens.
 
-Check out the [Beginner Tips and FAQ](Tips and FAQ.md) if you'd like
+Check out the [Beginner Tips and FAQ](Tips_and_FAQ.md) if you'd like
