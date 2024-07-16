@@ -8,6 +8,7 @@ version 0.3.1
 *Flipping any switch in the second half of the Dante chase will activate all three switches
 *The 250k macca in cursed hallway is back
 *Bugfix: Entering Gozu-Tennoh's room no longer causes several bad things to happen such as softlocking
+*Known Bug: Rarely, the randomizer may crash instead of generating a file. If this happens, try again with a different seed
 
 version 0.3.0
 *The Labyrinth of Amala is now open. 3 key items are randomized that unlock Kalpas 2, 3, and 4/5. Kalpa 1 will always be unlocked from Matador check. The star key will always be in the collector Manikin's shop. Cursed hallway will not give you 250000 Macca. Only the closest one of Dante's switches needs to be activated. For the second group, it's the one on the left. Beware of entering the other switch rooms as Dante will chase you and reset all the switches if he touches you. The Magic and Agility doors in Kalpa 5 will only require 15 in the stat instead of 25/20. All kalpa tunnels are removed except for Hell's Vault.
