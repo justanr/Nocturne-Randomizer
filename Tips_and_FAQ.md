@@ -10,13 +10,19 @@ Instead of Kalpa 3 unlocking the riders, you need to find the apocalypse stone. 
 The starting Pixie can be a higher level to carry you through early game until you've set up builds. Without this, a lot of early bosses and dungeons like underpass can be extremely difficult.
 
 **I don't know where any other bosses are**
-Have you checked Troll in Ginza, or Bishamon 1 outside Asakusa? Don't forget about optional bosses like Mara and the Onis
+Have you checked Troll in Ginza, or Bishamon 1 outside Asakusa? Don't forget about optional bosses like Mara and the Onis.
+
+**Do I have to do X to progress?**
+Generally speaking, you don't have to go anywhere just to watch a cutscene, like the mantra HQ roof or a man at Ginza. The biggest exceptions are visiting the central Amala Temple to lower the Tower of Kagutsuchi, reaching the bottom of Labyrinth of Amala to unlock TDE (if the auto setting isn't on), and the sequences with Pixie up until the triple Preta fight.
+
+**How do I enter the Amala Netowrk?**
+To go to Amala Network 2, talk to Hijiri in Asakusa. For Amala Network 3, do the same thing after completing Network 2 and the Girimehkala check.
 
 **Is there an HD version of the rando?**
-Currently no
+Currently no.
 
 **X boss had the wrong turn order?**
-This can happen, as agility values can vary between boss locations
+This can happen, as agility values can vary between boss locations.
 
 **Ongyo-Ki is acting wierd**
 It's a known bug that Ongyo-Ki acts differently outside his vanilla location, but there's no plan to fix this. If a boss with multiple enemies spawns at his check, attacking one will remove the other enemies, and AOE skills will miss.

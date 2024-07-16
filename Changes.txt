@@ -1,3 +1,14 @@
+version 0.3.1
+*Several cutscenes have been shortened or skipped
+*New Flags for Boss cutscenes have been added. You can skip all of them, watch the cutscenes to see funny new models, or choose Balanced to watch shorter boss cutscenes while skipping longer ones.
+*New Difficulty Flag - Low Level: Random encounters will not give EXP. Play at your own risk. Hard mode may softlock you at Forneus/Matador.
+*You no longer need to take Pixie to Yoyogi Park
+*You no longer need to visit Hijiri's rooms in Amala network 1
+*You now start with the moon and star keys
+*Flipping any switch in the second half of the Dante chase will activate all three switches
+*The 250k macca in cursed hallway is back
+*Bugfix: Entering Gozu-Tennoh's room no longer causes several bad things to happen such as softlocking
+
 version 0.3.0
 *The Labyrinth of Amala is now open. 3 key items are randomized that unlock Kalpas 2, 3, and 4/5. Kalpa 1 will always be unlocked from Matador check. The star key will always be in the collector Manikin's shop. Cursed hallway will not give you 250000 Macca. Only the closest one of Dante's switches needs to be activated. For the second group, it's the one on the left. Beware of entering the other switch rooms as Dante will chase you and reset all the switches if he touches you. The Magic and Agility doors in Kalpa 5 will only require 15 in the stat instead of 25/20. All kalpa tunnels are removed except for Hell's Vault.
 *The Pyramidion (Yahiro no Himorogi) is now randomized by default

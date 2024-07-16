@@ -724,7 +724,7 @@ BOSS_DEMON_MODEL_IDS_BY_NAME = {
     "Samael":[161, 161, 161],
     "Beelzebub":[207, 122, 122],
     "Metatron":[193, 193, 193],
-    "Ahriman":[46, 14, 146],
+    "Ahriman":[49, 48, 73],
     "Noah":[130, 130, 130],
     "Baal Avatar":[63, 69, 71],
     "Kagutsuchi":[122, 3, 6],

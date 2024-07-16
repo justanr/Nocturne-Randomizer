@@ -7,9 +7,9 @@ import hashlib
 
 MD5_NTSC = "92e00a8a00c72d25e23d01694ac89193"
 
-BEGINNER_PRESET = "Gehenna_Entity_Hanuman_Corpus_Odin"
-NORMAL_PRESET = "Muspell_Divine_Hanuman_Devil_Vishnu"
-ADVANCED_PRESET = "Anathema_Deity_Gui Xian_Reaper_Atavaka"
+BEGINNER_PRESET = "Gehenna_Entity_Hanuman_Corpus_Odin_Masakados"
+NORMAL_PRESET = "Muspell_Divine_Hanuman_Devil_Vishnu_Masakados"
+ADVANCED_PRESET = "Anathema_Deity_Gui Xian_Reaper_Atavaka_Kailash"
 
 def get_md5(file_path): #Do something about this code being in 2 places eventually
         # from https://stackoverflow.com/questions/1131220/get-md5-hash-of-big-files-in-python
@@ -343,7 +343,18 @@ def create_gui(config_settings):
     listDifficulty.insert(2, "Bosses go first more often")
     listDifficulty.insert(3, "No level safety")
     listDifficulty.insert(4, "No Magatama safety")
+    listDifficulty.insert(5, "Low Level")
     listDifficulty.pack()
+    
+    cutsceneLabel = tk.Label(page_2_frame_left, text="Boss Cutscene Setting")
+    cutsceneLabel.pack()
+
+    listCutscene = tk.Listbox(page_2_frame_left, selectmode = "single", width = 50, exportselection=False, selectbackground = "#598074")
+    listCutscene.insert(0, "Watch - Models/Dialogue Randomized")
+    listCutscene.insert(1, "Skip Longer Cutscenes")
+    listCutscene.insert(2, "Skip All")
+    listCutscene.selection_set(1)
+    listCutscene.pack()
 
     outputLabel = tk.Label(page_2_frame_right, text="Export Format")
     outputLabel.pack()
@@ -382,9 +393,11 @@ def create_gui(config_settings):
         difficultySelection = [False for i in range(listDifficulty.size())]
         for i in listDifficulty.curselection():
             difficultySelection[i] = True
-        reasonDifficultyNumber = sum([b << i for i, b in enumerate(difficultySelection)]) + 32 * listReason.curselection()[0] #0-159
-        reasonDifficultyString = demonNames[reasonDifficultyNumber]
-        return generalString1 + '_' + generalString2 + '_' + musicPixieMutateString + '_' + logicString + '_' + reasonDifficultyString
+        difficultyNumber = sum([b << i for i, b in enumerate(difficultySelection)]) #0-63
+        difficultyString = demonNames[difficultyNumber]
+        reasonCutsceneNumber = 4 * listReason.curselection()[0] + listCutscene.curselection()[0] #0-18
+        reasonCutsceneString = magatamaNames[len(magatamaNames) - 1 - reasonCutsceneNumber]
+        return generalString1 + '_' + generalString2 + '_' + musicPixieMutateString + '_' + logicString + '_' + difficultyString + '_' + reasonCutsceneString
 
     def apply_settings_string(settings_string):
         current_settings = create_settings_string()
@@ -394,7 +407,8 @@ def create_gui(config_settings):
             generalNumber2 = raceNames.index(split_string[1])
             musicPixieMutateNumber = len(demonNames) - 1 - demonNames.index(split_string[2])
             logicNumber = len(raceNames) - 1 - raceNames.index(split_string[3])
-            reasonDifficultyNumber = demonNames.index(split_string[4])
+            difficultyNumber = demonNames.index(split_string[4])
+            reasonCutsceneNumber = len(magatamaNames) - 1 - magatamaNames.index(split_string[5])
             for i in range(listLogic.size()):
                 if ((logicNumber & (1 << i)) > 0):
                     listLogic.selection_set(i)
@@ -407,11 +421,11 @@ def create_gui(config_settings):
                 else:
                     listFlags.selection_clear(i)
             for i in range(listDifficulty.size()):
-                if ((reasonDifficultyNumber & (1 << i)) > 0):
+                if ((difficultyNumber & (1 << i)) > 0):
                     listDifficulty.selection_set(i)
                 else:
                     listDifficulty.selection_clear(i)
-            reasonNumber = reasonDifficultyNumber // 32
+            reasonNumber = reasonCutsceneNumber // 4
             for i in range(listReason.size()):
                 if (i == reasonNumber):
                     listReason.selection_set(i)
@@ -435,6 +449,12 @@ def create_gui(config_settings):
                     listSkillMutation.selection_set(i)
                 else:
                     listSkillMutation.selection_clear(i)
+            cutsceneNumber = reasonCutsceneNumber % 4
+            for i in range(listCutscene.size()):
+                if (i == cutsceneNumber):
+                    listCutscene.selection_set(i)
+                else:
+                    listCutscene.selection_clear(i)
             verify_string = create_settings_string()
             if (verify_string != settings_string):
                 tk.messagebox.showwarning(title="warning", message="Warning: Loss of fidelity in settings string. Please double check your settings")
@@ -539,6 +559,14 @@ def create_gui(config_settings):
                 listDifficulty.selection_set(3)
             if configur.get('Settings', 'NoMagatamaSafety') == 'true':
                 listDifficulty.selection_set(4)
+            if configur.get('Settings', 'LowLevel') == 'true':
+                listDifficulty.selection_set(5)
+            if configur.get('Settings', 'LongestCutscenes') == 'true':
+                listCutscene.selection_clear(1)
+                listCutscene.selection_set(0)
+            if configur.get('Settings', 'ShortestCutscenes') == 'true':
+                listCutscene.selection_clear(1)
+                listCutscene.selection_set(2)
             if configur.get('Files', 'ExportToHostfs') == 'true':
                 listOutput.selection_clear(0)
                 listOutput.selection_set(1)
@@ -573,6 +601,8 @@ def create_gui(config_settings):
     difficultyFlags = [False for i in range(listDifficulty.size())]
     for i in listDifficulty.curselection():
         difficultyFlags[i] = True
+        
+    cutsceneChoice = listCutscene.curselection()
 
     config_export_to_hostfs = False
     if (len(listOutput.curselection()) > 0 and listOutput.curselection()[0] == 1):
@@ -811,6 +841,24 @@ def create_gui(config_settings):
         configur.set('Settings', 'NoMagatamaSafety', 'true')
     else:
         configur.set('Settings', 'NoMagatamaSafety', 'false')
+        
+    if difficultyFlags[5]:
+        config_settings.low_level = True
+        configur.set('Settings', 'LowLevel', 'true')
+    else:
+        configur.set('Settings', 'LowLevel', 'false')
+        
+    if len(cutsceneChoice) > 0 and cutsceneChoice[0] == 2:
+        config_settings.shortest_cutscenes = True
+        configur.set('Settings', 'ShortestCutscenes', 'true')
+    else:
+        configur.set('Settings', 'ShortestCutscenes', 'false')
+
+    if len(cutsceneChoice) > 0 and cutsceneChoice[0] == 0:
+        config_settings.longest_cutscenes = True
+        configur.set('Settings', 'LongestCutscenes', 'true')
+    else:
+        configur.set('Settings', 'LongestCutscenes', 'false')
 
     with open('config.ini', 'w') as configfile:
         configur.write(configfile)    
@@ -826,5 +874,6 @@ def create_config_file(configur):
                                 'EnemySkillScaling': False, 'FightLucifer': False, 'MenorahGroups': False, 'BetterMutationsStandard': False,
                                 'BetterMutationsRandom': False, 'BetterMutationsUnique': False, 'Yosuga': False, 'Shijima': False, 'Musubi': False,
                                 'NoLoaProgression': False, 'VanillaPyramidion': False, 'OpenYurakucho': False, 'OpenIkebukuro': False,
-                                'LowBossSafety': False, 'HighBossSafety': False, 'BossesGoFirstMoreOften': False, 'NoLevelSafety': False, 'NoMagatamaSafety': False}
+                                'LowBossSafety': False, 'HighBossSafety': False, 'BossesGoFirstMoreOften': False, 'NoLevelSafety': False, 'NoMagatamaSafety': False,
+                                'ShortestCutscenes': False, 'LongestCutscenes': False, 'LowLevel': False}
     

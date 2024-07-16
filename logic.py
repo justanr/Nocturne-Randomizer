@@ -261,6 +261,8 @@ def randomize_world(world, logger, config_settings, attempts=100):
     flag_pool = [f for f in flag_pool if not f.is_terminal]
     if config_settings.vanilla_pyramidion:
         flag_pool.remove(world.get_flag('Pyramidion'))
+    if config_settings.open_ikebukuro:
+        flag_pool.remove(world.get_flag('Ongyo-Key'))
     flag_pool.remove(world.get_flag('Earthstone'))
     flag_pool.remove(world.get_flag('Netherstone'))
     flag_pool.remove(world.get_flag('Heavenstone'))

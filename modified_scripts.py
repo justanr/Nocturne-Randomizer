@@ -83,6 +83,8 @@ IMMERSIVE_NAMES = {
     "Dante 2": "Dante",
     "Sisters": "Lachesis",
     "Archangels": "Gabriel",
+    "Bishamon 1": "Bishamon",
+    "Bishamon 2": "Bishamon"
 }
 
 #instruction creation shortcut
@@ -130,7 +132,7 @@ class Script_Modifier:
                 for extra_id in flag.additional_ids:
                     ret_insts.append(inst("PUSHIS",extra_id))
                     ret_insts.append(inst("COMM",8))
-        if world.checks[check_name].boss.name == "Kagutsuchi" and world.checks[check_name].boss.reward is not None: #Fix for Kagutsuchi not dropping rewards
+        if world.checks[check_name].boss.reward is not None: #Just move all magatama rewards to events because those are less glitchy
             magatama = world.checks[check_name].boss.reward.id
             ret_insts.append(inst("PUSHIS",magatama))
             ret_insts.append(inst("COMM",0x122))
@@ -153,8 +155,14 @@ class Script_Modifier:
         #print("Error: In get_checks_boss_id(), ID of boss",boss_of_check,"who is",check_name,"was not found")
         print("Error: a field boss model does not exist and will show a generic replacement")
         return 122 #Mothman!
-    def get_checks_boss_name(self, check_name, world, immersive=False):
+    def get_checks_boss_name(self, check_name, world, immersive=False, index=0):
         boss_name = world.checks[check_name].boss.name
+        if index > 0 and boss_name in custom_vals.BOSS_DEMON_MODEL_IDS_BY_NAME:
+            demon_id = custom_vals.BOSS_DEMON_MODEL_IDS_BY_NAME[boss_name][index]
+            for key, value in custom_vals.DEMON_ID_BY_NAME.items():
+                if value == demon_id:
+                    boss_name = key
+                    break
         if immersive and boss_name in IMMERSIVE_NAMES:
             boss_name = IMMERSIVE_NAMES[boss_name]
         return boss_name
@@ -390,10 +398,10 @@ class Script_Modifier:
             inst("COMM",0x8),
             inst("PUSHIS",0x7b1), #Dante switch
             inst("COMM",0x8),
-            inst("PUSHIS",0x7b3), #Dante switch
-            inst("COMM",0x8),
-            inst("PUSHIS",0x7b4), #Dante switch
-            inst("COMM",0x8),
+            #inst("PUSHIS",0x7b3), #Dante switch
+            #inst("COMM",0x8),
+            #inst("PUSHIS",0x7b4), #Dante switch
+            #inst("COMM",0x8),
             inst("PUSHIS",0x7a6), #Dante textbox
             inst("COMM",0x8),
             inst("PUSHIS",0x7b9), #Dante textbox
@@ -405,6 +413,18 @@ class Script_Modifier:
             inst("PUSHIS",0x7a7), #Dante textbox
             inst("COMM",0x8),
             inst("PUSHIS",0x110), #Said no to recruit Dante
+            inst("COMM",0x8),
+            inst("PUSHIS",0x44a), #Talked to Hijiri in SMC
+            inst("COMM",0x8),
+            inst("PUSHIS",0xa4), #Deathstone speech in CoS
+            inst("COMM",0x8),
+            inst("PUSHIS",0x3ec), #Moon Key
+            inst("COMM",0x8),
+            inst("PUSHIS",0x3f0), #Star Key
+            inst("COMM",0x8),
+            inst("PUSHIS",0x750), #LoA Lobby Splash
+            inst("COMM",0x8),
+            inst("PUSHIS",0x593), #Kabukicho Digging Manikin dialogue
             inst("COMM",0x8),
             #inst("PUSHIS",0x3f1), #Black Key (testing purposes)
             #inst("COMM",8),
@@ -469,6 +489,10 @@ class Script_Modifier:
 
             inst("PUSHIS",bonus_magatama), # bonus magatama
             inst("COMM",0x122), # give magatama
+            inst("PUSHIS",0x1), # marogareh
+            inst("COMM",0x122), # give magatama
+            inst("PUSHIS",0x1), # marogareh
+            inst("COMM",0x20), # injest magatama
             
             #Open mode
             inst("PUSHIS",44), #Asakusa Front Door
@@ -640,8 +664,8 @@ class Script_Modifier:
             inst("COMM",8),
             inst("PUSHIS",1760), #mifunashiro entrance
             inst("COMM",8),
-            inst("PUSHIS",1925), #loki sidequest started
-            inst("COMM",8), 
+            #inst("PUSHIS",1925), #loki sidequest started
+            #inst("COMM",8), 
             inst("PUSHIS",4), #insert TDE flags before this line
             inst("COMM",0x158), #+4 stock
             inst("PUSHIS",0),
@@ -660,8 +684,10 @@ class Script_Modifier:
             inst("PUSHIS",15),
             inst("PUSHIS",1),
             inst("COMM",0x97),
-            inst("PUSHIS",618),
-            inst("COMM",0x66),
+            #inst("PUSHIS",618),
+            #inst("COMM",0x66),
+            inst("COMM",0x23), #Try to skip waking up cutscene
+            inst("COMM",0x2e),
             inst("END",0)
         ]
        
@@ -692,6 +718,25 @@ class Script_Modifier:
         # SMC area flag
         # get the uncompressed field script from the folder instead of the LB
         f015_obj = self.get_script_obj_by_path('/fld/f/f015/f015.bf')
+
+        f015_pixie_proc = f015_obj.getProcIndexByLabel("003_01eve_01")
+        f015_pixie_insts, f015_pixie_labels = f015_obj.getProcInstructionsLabelsByIndex(f015_pixie_proc)
+        precut = 32
+        postcut = 356
+        precut2 = 367
+        postcut2 = 378
+        diff = postcut - precut
+        diff2 = postcut2 - precut2
+        for l in f015_pixie_labels:
+            if l.label_offset > precut:
+                if l.label_offset > precut2:
+                    l.label_offset -= diff2
+                l.label_offset -= diff
+                if l.label_offset < 1:
+                    l.label_offset = 1
+        f015_pixie_insts = f015_pixie_insts[:precut] + f015_pixie_insts[postcut:precut2] + f015_pixie_insts[postcut2:]
+        f015_obj.changeProcByIndex(f015_pixie_insts, f015_pixie_labels, f015_pixie_proc)
+
         tri_preta_room_index = f015_obj.getProcIndexByLabel("012_start")
         f015_012_start_insts = [
             inst("PROC",tri_preta_room_index),
@@ -750,41 +795,54 @@ class Script_Modifier:
 
         #Forneus
         forneus_room_index = f015_obj.getProcIndexByLabel("002_start") #index 18 / 0x12
-        #Can't figure out what flag 769 is for. I'll just not set it and see what happens.
-        #Flag 8 is definitely the defeat forneus flag.
-        #000_dh_plus is the one that has the magatama text that is called after beating forneus. Proc index 60 / 0x3c
-        f015_002_start_insts = [
-            inst("PROC",forneus_room_index),
-            inst("PUSHIS",0),
-            inst("PUSHIS",0x8),
-            inst("COMM",7), #Check Forneus fought flag
-            inst("PUSHREG"),
-            inst("EQ"),
-            inst("IF",0), #Branch to first label if fought
-            inst("PUSHIS",1),
-            inst("PUSHIS",0x44f),
-            inst("COMM",7), #2F check
-            inst("PUSHREG"),
-            inst("EQ"),
-            inst("IF",0),
-            inst("PUSHIS",8),
-            inst("COMM",8), #Set Forneus fought flag
-            inst("PUSHIS",0x1f4),
-            inst("PUSHIS",0xf),
-            inst("PUSHIS",1),
-            inst("COMM",0x97), #Call next
-            inst("PUSHIS",0xe),
-            inst("COMM",0x67), #Fight Forneus
-            inst("END"),
-            inst("PUSHIX", 7),
-            inst("COMM",0x16), #No idea what this does
-            inst("END") #Label 0 here
-        ]
-        #print 0 positions: 002_01eve_04, 005_01eve_05, 007_01eve_06, 007_01eve_08
-        f015_002_start_labels = [
-            assembler.label("FORNEUS_DEAD",24)
-        ]
-        f015_obj.changeProcByIndex(f015_002_start_insts, f015_002_start_labels, forneus_room_index)
+        
+        if config_settings.shortest_cutscenes: #Skip Forneus cutscene
+            #Can't figure out what flag 769 is for. I'll just not set it and see what happens.
+            #Flag 8 is definitely the defeat forneus flag.
+            #000_dh_plus is the one that has the magatama text that is called after beating forneus. Proc index 60 / 0x3c
+            f015_002_start_insts = [
+                inst("PROC",forneus_room_index),
+                inst("PUSHIS",0),
+                inst("PUSHIS",0x8),
+                inst("COMM",7), #Check Forneus fought flag
+                inst("PUSHREG"),
+                inst("EQ"),
+                inst("IF",0), #Branch to first label if fought
+                inst("PUSHIS",1),
+                inst("PUSHIS",0x44f),
+                inst("COMM",7), #2F check
+                inst("PUSHREG"),
+                inst("EQ"),
+                inst("IF",0),
+                inst("PUSHIS",8),
+                inst("COMM",8), #Set Forneus fought flag
+                inst("PUSHIS",0x1f4),
+                inst("PUSHIS",0xf),
+                inst("PUSHIS",1),
+                inst("COMM",0x97), #Call next
+                inst("PUSHIS",0xe),
+                inst("COMM",0x67), #Fight Forneus
+                inst("END"),
+                inst("PUSHIX", 7),
+                inst("COMM",0x16), #No idea what this does
+                inst("END") #Label 0 here
+            ]
+            #print 0 positions: 002_01eve_04, 005_01eve_05, 007_01eve_06, 007_01eve_08
+            f015_002_start_labels = [
+                assembler.label("FORNEUS_DEAD",24)
+            ]
+            f015_obj.changeProcByIndex(f015_002_start_insts, f015_002_start_labels, forneus_room_index)
+        else: #Watch Forneus cutscene, set model and message box
+            f015_002_start_insts, f015_002_start_labels = f015_obj.getProcInstructionsLabelsByIndex(forneus_room_index)
+            f015_002_start_insts[29] = inst("PUSHIS", self.get_checks_boss_id("Forneus",world))
+            f015_002_start_insts[44] = inst("PUSHIS", 0x4) #Magic anim instead of unique skill
+            f015_obj.changeProcByIndex(f015_002_start_insts, f015_002_start_labels, forneus_room_index)
+            f015_forneus_name_id = f015_obj.sections[3].messages[0x31].name_id
+            f015_forneus_message = assembler.message("Hey, punk! I've never seen you^naround, and I don't like your face!^n^xYou're trying to get by^nwithout paying respect to me,^nThe Almighty "+self.get_checks_boss_name("Forneus",world, immersive=True)+"!?^xYou wanna die, don't ya!?." ,"boss_01")
+            f015_forneus_message.name_id = f015_forneus_name_id
+            f015_obj.changeMessageByIndex(f015_forneus_message,0x31)
+            f015_obj.changeNameByLookup("Forneus", self.get_checks_boss_name("Forneus",world, immersive=True))
+            
 
         f015_obj.changeMessageByIndex(assembler.message(self.get_reward_str("Forneus",world),"FORNEUS_REWARD"),0x5b)
         
@@ -870,7 +928,12 @@ class Script_Modifier:
                 assembler.label("BRIDER_FOUGHT",45),
                 assembler.label("BRIDER_RAN",42)
             ]
-        f015_obj.changeProcByIndex(f015_14_insts, f015_14_labels, f015_14_proc)
+        if not config_settings.longest_cutscenes:
+            f015_obj.changeProcByIndex(f015_14_insts, f015_14_labels, f015_14_proc)
+        else:
+            f015_14_insts, f015_14_labels = f015_obj.getProcInstructionsLabelsByIndex(f015_14_proc)
+            f015_14_insts[4] = inst("PUSHIS",0x3f4)
+            f015_obj.changeProcByIndex(f015_14_insts, f015_14_labels, f015_14_proc)
 
         f015_brider_callback_str = "BR_CB"
         f015_brider_rwms_index = f015_obj.appendMessage(self.get_reward_str("Black Rider",world), "BR_REWARD")
@@ -893,6 +956,31 @@ class Script_Modifier:
         self.dds3.add_new_file(custom_vals.LB0_PATH['f015'], f015_lb)
         if SCRIPT_DEBUG:
             self.script_debug_out(f015_obj,'f015.bf')
+            
+        #Black Rider fight cutscene model swap
+        e745_obj = self.get_script_obj_by_name('e745')
+        e745_10_proc = e745_obj.getProcIndexByLabel("e745_010")
+        e745_10_insts, e745_10_labels = e745_obj.getProcInstructionsLabelsByIndex(e745_10_proc)
+        e745_10_insts[130] = inst("PUSHIS",0x4) #Update animations
+        e745_10_insts = e745_10_insts[:116] + e745_10_insts[127:] #Fix camera
+        e745_obj.changeProcByIndex(e745_10_insts, e745_10_labels, e745_10_proc)
+
+        e745_main_proc = e745_obj.getProcIndexByLabel("e745_main")
+        e745_main_insts, e745_main_labels = e745_obj.getProcInstructionsLabelsByIndex(e745_main_proc)
+        e745_main_insts[54] = inst("PUSHIS",self.get_checks_boss_id("Black Rider",world))
+        e745_main_insts[55] = inst("PUSHIS",0x6)
+        e745_main_insts[56] = inst("COMM",0x15)
+        if config_settings.menorah_groups: #Keep menorah flag and textbox if the vanilla flag is on
+            e745_main_insts = e745_main_insts[:189] + e745_main_insts[197:]
+        e745_obj.changeProcByIndex(e745_main_insts, e745_main_labels, e745_main_proc)
+
+        e745_br_name_id = e745_obj.sections[3].messages[0x1].name_id
+        e745_br_message = assembler.message("As long as thou seekest^nthe candelabra...^nthou art mine enemy...^xI... the "+self.get_checks_boss_name("Black Rider",world, immersive=True)+"...^nshall judge thee..." ,"MSG_002")
+        e745_br_message.name_id = e745_br_name_id
+        e745_obj.changeMessageByIndex(e745_br_message,0x1)
+        e745_obj.changeNameByLookup("Black Rider", self.get_checks_boss_name("Black Rider",world, immersive=True))
+        
+        self.dds3.add_new_file(custom_vals.SCRIPT_OBJ_PATH['e745'], BytesIO(bytes(e745_obj.toBytes())))
 
         #Cutscene removal in Shibuya f017
         f017_obj = self.get_script_obj_by_name('f017')
@@ -930,22 +1018,56 @@ class Script_Modifier:
         #can hint about location of item with text id 0x1. "It seems fishy..."
         f017_09_proc = f017_obj.getProcIndexByLabel('009_start')
         f017_09_insts, f017_09_labels = f017_obj.getProcInstructionsLabelsByIndex(f017_09_proc)
-        precut = 10
-        postcut = 421
-        diff = postcut - precut
-        f017_09_insert_insts = self.get_flag_reward_insts("Mara",world)
-        f017_09_insts = f017_09_insts[:precut] + f017_09_insert_insts + f017_09_insts[postcut:]
-        for l in f017_09_labels:
-            if l.label_offset > precut:
-                if l.label_offset < postcut:
-                    l.label_offset=0
-                else:
-                    l.label_offset-=diff
+        if not config_settings.longest_cutscenes:
+            precut = 10
+            postcut = 421
+            diff = postcut - precut
+            f017_09_insert_insts = self.get_flag_reward_insts("Mara",world)
+            f017_09_insts = f017_09_insts[:precut] + f017_09_insert_insts + f017_09_insts[postcut:]
+            for l in f017_09_labels:
+                if l.label_offset > precut:
+                    if l.label_offset < postcut:
+                        l.label_offset=0
+                    else:
+                        l.label_offset-=diff
+                        l.label_offset+=len(f017_09_insert_insts)
+        else: #Mara cutscnene name and model swaps
+            f017_09_insts[10] = inst("PUSHIS",self.get_checks_boss_id("Mara",world, index=1))
+            f017_09_insts[196] = inst("PUSHIS",self.get_checks_boss_id("Mara",world))
+            f017_09_insert_insts = self.get_flag_reward_insts("Mara",world)
+            f017_09_insts = f017_09_insts[:10] + f017_09_insert_insts + f017_09_insts[10:]
+            for l in f017_09_labels:
+                if l.label_offset > 10:
                     l.label_offset+=len(f017_09_insert_insts)
+            f017_baphomet_name_id = f017_obj.sections[3].messages[0x6].name_id
+            f017_baphomet_message = assembler.message("............^n^x*chuckle* As I haaaad been saying,^nit's not time yet.^n^x"+self.get_checks_boss_name("Mara",world, immersive=True)+" is a magnificent demon...^n^xIf we summon him at the wrong^ntime, something baaaad may^nhappen." ,"BAFO_01")
+            f017_baphomet_message.name_id = f017_baphomet_name_id
+            f017_obj.changeMessageByIndex(f017_baphomet_message,0x6)
+            f017_baphomet_2_message = assembler.message("*chuckle*^n^xWell! In my rush, I have summoned^n"+self.get_checks_boss_name("Mara",world, immersive=True)+" the Magnificent in an^nincomplete body of a slime." ,"BAFO_08")
+            f017_baphomet_2_message.name_id = f017_baphomet_name_id
+            f017_obj.changeMessageByIndex(f017_baphomet_2_message,0x16)
+            f017_manikin_left_name_id = f017_obj.sections[3].messages[0x5].name_id
+            f017_manikin_left_message = assembler.message("Right on! It's payback time!^n^xHurry up and summon that^nmagnificent demon!^n^xSummon the magnificent ^r"+self.get_checks_boss_name("Mara",world, immersive=True)+"^p!^nThis is going to be sooo sweet!!" ,"MANE_B_01")
+            f017_manikin_left_message.name_id = f017_manikin_left_name_id
+            f017_obj.changeMessageByIndex(f017_manikin_left_message,0x5)
+            f017_manikin_left_2_message = assembler.message("See?! He thinks so too!^n^xNow, hurry up and summon "+self.get_checks_boss_name("Mara",world, immersive=True)+"!" ,"MANE_B_03_YES")
+            f017_manikin_left_2_message.name_id = f017_manikin_left_name_id
+            f017_obj.changeMessageByIndex(f017_manikin_left_2_message,0xe)
+            f017_manikin_left_3_message = assembler.message("That's right, Mr. "+self.get_checks_boss_name("Mara",world, immersive=True, index=1)+".^nJust like the guy on the right said!" ,"MANE_B_02")
+            f017_manikin_left_3_message.name_id = f017_manikin_left_name_id
+            f017_obj.changeMessageByIndex(f017_manikin_left_3_message,0x8)
+            f017_manikin_right_name_id = f017_obj.sections[3].messages[0x9].name_id
+            f017_manikin_right_message = assembler.message("You there! You tell him, too!^n^xTell him to summon "+self.get_checks_boss_name("Mara",world, immersive=True)+" and^nmake our lives a little easier!" ,"MANE_B_03")
+            f017_manikin_right_message.name_id = f017_manikin_right_name_id
+            f017_obj.changeMessageByIndex(f017_manikin_right_message,0x9)
+            f017_manikin_right_2_message = assembler.message("Ah! You're back!^n^xAre you here to tell him to hurry up^nand summon "+self.get_checks_boss_name("Mara",world, immersive=True)+"???" ,"MANE_B_03_2ND")
+            f017_manikin_right_2_message.name_id = f017_manikin_right_name_id
+            f017_obj.changeMessageByIndex(f017_manikin_right_2_message,0xd)
+            f017_obj.changeNameByLookup("Baphomet", self.get_checks_boss_name("Mara",world, immersive=True, index=1))
+            f017_obj.changeNameByLookup("Mara", self.get_checks_boss_name("Mara",world, immersive=True))
         f017_obj.changeProcByIndex(f017_09_insts, f017_09_labels, f017_09_proc)
         f017_obj.changeMessageByIndex(assembler.message(self.get_reward_str("Mara",world),"MARA_RWMS"),0x19)
 
-        #TODO: Change fire text to White Rider boss name
         #Mara hint message
         f017_obj.changeMessageByIndex(assembler.message("> A ceremony is being prepared^nto summon ^r"+self.get_checks_boss_name("Mara",world)+"^p with an eggplant^nfrom ^g"+self.get_flag_reward_location_string(0x3f6,world)+"^p.","AYASII"),0x1)
 
@@ -957,9 +1079,23 @@ class Script_Modifier:
         f017_wr_insts, f017_wr_labels = f017_obj.getProcInstructionsLabelsByIndex(f017_wr_proc)
         f017_wr_insts[4] = inst("PUSHIS",0x3f4)
         f017_obj.changeProcByIndex(f017_wr_insts, f017_wr_labels, f017_wr_proc)
-        f017_wr2_proc = f017_obj.getProcIndexByLabel("003_pixy") #There are two of these. Booooo
+        f017_wr2_proc = f017_obj.getProcIndexByLabel("003_pixy") #Proc for both white rider (again) and Pixie
         f017_wr2_insts, f017_wr2_labels = f017_obj.getProcInstructionsLabelsByIndex(f017_wr2_proc)
         f017_wr2_insts[4] = inst("PUSHIS",0x3f4)
+        f017_wr2_cutoff = 87 #Remove Pixie blocking path if you haven't gone to Yoyogi park
+        f017_wr2_insert_insts = [
+            inst("PUSHIS",0x460),
+            inst("COMM",0x8),
+            inst("PUSHIS",0x46a),
+            inst("COMM",0x8),
+            inst("PUSHIS",0x1),
+            inst("COMM",0x151),
+            inst("END")
+        ]
+        f017_wr2_insts = f017_wr2_insts[:f017_wr2_cutoff] + f017_wr2_insert_insts
+        for l in f017_wr2_labels:
+            if l.label_offset > f017_wr2_cutoff:
+                l.label_offset = 1
         f017_obj.changeProcByIndex(f017_wr2_insts, f017_wr2_labels, f017_wr2_proc)
         #003_01eve_01
         #bit checks: 5c0, 7b8, 755 off, 112 off.
@@ -1039,7 +1175,12 @@ class Script_Modifier:
             inst("CALL",f017_03_1_proc),
             inst("END"),
         ]
-        f017_obj.changeProcByIndex(f017_03_insts, f017_03_labels, f017_03_1_proc)
+        if not config_settings.longest_cutscenes:
+            f017_obj.changeProcByIndex(f017_03_insts, f017_03_labels, f017_03_1_proc)
+        else:
+            f017_03_1_insts, f017_03_1_labels = f017_obj.getProcInstructionsLabelsByIndex(f017_03_1_proc)
+            f017_03_1_insts[4] = inst("PUSHIS",0x3f4)
+            f017_obj.changeProcByIndex(f017_03_1_insts, f017_03_1_labels, f017_03_1_proc)
         f017_obj.changeProcByIndex(f017_03_2_insts, [], f017_03_2_proc)
         f017_obj.changeProcByIndex(f017_03_3_insts, [], f017_03_3_proc)
         f017_wr_rwms_index = f017_obj.appendMessage(self.get_reward_str("White Rider",world),"WR_RWMS")
@@ -1065,6 +1206,44 @@ class Script_Modifier:
 
         if SCRIPT_DEBUG:
             self.script_debug_out(f017_obj,'f017.bf')
+            
+        #White Rider fight cutscene model swap
+        e743_obj = self.get_script_obj_by_name('e743')
+        e743_10_proc = e743_obj.getProcIndexByLabel("e743_010")
+        e743_10_insts, e743_10_labels = e743_obj.getProcInstructionsLabelsByIndex(e743_10_proc)
+        e743_10_insts[97] = inst("PUSHIS",0x0) #Update animations
+        e743_10_insts[100] = inst("PUSHIS",0x0)
+        e743_10_insts[124] = inst("PUSHSTR", 258)
+        e743_10_insts[128] = inst("PUSHSTR", 276)
+        e743_10_insts[131] = inst("PUSHSTR", 267) #Fix camera to show the boss at all times
+        e743_10_insts[142] = inst("PUSHIS",0x1)
+        e743_10_insts[172] = inst("PUSHIS",0xe)
+        e743_10_insts[203] = inst("PUSHIS",0xf)
+        e743_10_insts[230] = inst("PUSHIS",0x4)
+        e743_10_insert_insts = [
+            inst("PUSHSTR", 0x9),#01cam_01
+            inst("COMM", 0x94),
+            inst("PUSHREG"),
+            inst("PUSHIX", 0x1),
+            inst("COMM", 0x4a), #Commands that use the model's integer index and are always run when loading
+            inst("PUSHIX", 0x1),
+            inst("COMM", 0x21e)
+        ]
+        e743_10_insts = e743_10_insts[:74] + e743_10_insert_insts + e743_10_insts[74:189] + e743_10_insts[200:216] + e743_10_insts[227:]
+        e743_obj.changeProcByIndex(e743_10_insts, e743_10_labels, e743_10_proc)
+
+        e743_main_proc = e743_obj.getProcIndexByLabel("e743_main")
+        e743_main_insts, e743_main_labels = e743_obj.getProcInstructionsLabelsByIndex(e743_main_proc)
+        e743_main_insts[54] = inst("PUSHIS",self.get_checks_boss_id("White Rider",world))
+        e743_main_insts[55] = inst("PUSHIS",0x6)
+        e743_main_insts[56] = inst("COMM",0x15)
+        if config_settings.menorah_groups: #Keep menorah flag and textbox if the vanilla flag is on
+            e743_main_insts = e743_main_insts[:179] + e743_main_insts[187:]
+        e743_obj.changeProcByIndex(e743_main_insts, e743_main_labels, e743_main_proc)
+
+        e743_obj.changeNameByLookup("White Rider", self.get_checks_boss_name("White Rider",world, immersive=True))
+        
+        self.dds3.add_new_file(custom_vals.SCRIPT_OBJ_PATH['e743'], BytesIO(bytes(e743_obj.toBytes())))
 
         #Hijiri in Ginza
         #Shorten e623. e623_trm
@@ -1091,6 +1270,27 @@ class Script_Modifier:
         #4A0, 4A1, 4A2 (looks weird but eh).
         #Shorten cutscene for 4A3 in 002_start - 4A7 gets set going in and unset immediately. Remove 55 - 164.
         f018_obj = self.get_script_obj_by_name('f018')
+        
+        f018_01_room = f018_obj.getProcIndexByLabel("001_start")
+        f018_01_insts, f018_01_labels = f018_obj.getProcInstructionsLabelsByIndex(f018_01_room)
+        f018_01_cutoff = 15
+        f018_01_insert_insts = [
+            inst("PUSHIS",0x4a0),
+            inst("COMM",0x8),
+            inst("PUSHIS",0x48e),
+            inst("COMM",0x9),
+            inst("PUSHIS",0x4a3), #Hijiri talk 2 flag
+            inst("COMM",0x8),
+            inst("PUSHIS",0x4a6), #Hijiri talk 3 flag
+            inst("COMM",0x8),
+            inst("END")
+        ]
+        f018_01_insts = f018_01_insts[:f018_01_cutoff] + f018_01_insert_insts
+        for l in f018_01_labels:
+            if l.label_offset > f018_01_cutoff:
+                l.label_offset = 1
+        f018_obj.changeProcByIndex(f018_01_insts, f018_01_labels, f018_01_room)
+
         f018_02_room = f018_obj.getProcIndexByLabel("002_start")
         f018_02_insts, f018_02_labels = f018_obj.getProcInstructionsLabelsByIndex(f018_02_room)
         precut = 55
@@ -1132,39 +1332,50 @@ class Script_Modifier:
         #return: 4AB set
         f018_09_room = f018_obj.getProcIndexByLabel("009_start")
         f018_09_insts, f018_09_labels = f018_obj.getProcInstructionsLabelsByIndex(f018_09_room)
-        f018_09_insert_insts = [ #Instructions to be inserted before fighting specter 1
-            inst("PUSHSTR", 697), #"atari_hoji_01"
-            inst("PUSHIS", 0),
-            inst("PUSHIS", 0),
-            inst("COMM",0x108), #Remove the barrier
-            inst("PUSHIS", 2),
-            inst("PUSHSTR", 711), #"md_hoji_01"
-            inst("PUSHIS", 0),
-            inst("PUSHIS", 0),
-            inst("COMM",0x104), #Remove the visual barrier
-            inst("PUSHIS", 0xe),
-            inst("COMM", 8) #set flag 0xE
-        ] + self.get_flag_reward_insts("Specter 1",world)
-        #change 0x16 for specter 1 reward.
         f018_obj.changeMessageByIndex(assembler.message(self.get_reward_str("Specter 1",world),"SPEC1_REWARD"),0x27)
-        #TODO: Change message to tell you that Specter 1 is there. "..Oh yeah, there's something you should know" 
+        if not config_settings.longest_cutscenes:
+            f018_09_insert_insts = [ #Instructions to be inserted before fighting specter 1
+                inst("PUSHSTR", 697), #"atari_hoji_01"
+                inst("PUSHIS", 0),
+                inst("PUSHIS", 0),
+                inst("COMM",0x108), #Remove the barrier
+                inst("PUSHIS", 2),
+                inst("PUSHSTR", 711), #"md_hoji_01"
+                inst("PUSHIS", 0),
+                inst("PUSHIS", 0),
+                inst("COMM",0x104), #Remove the visual barrier
+                inst("PUSHIS", 0xe),
+                inst("COMM", 8) #set flag 0xE
+            ] + self.get_flag_reward_insts("Specter 1",world)
+            #change 0x16 for specter 1 reward.
+            
+            #TODO: Change message to tell you that Specter 1 is there. "..Oh yeah, there's something you should know" 
         
-        precut1 = 35
-        postcut1 = 161
-        precut2 = 171
-        postcut2 = 247
-        diff1 = postcut1 - precut1
-        diff2 = postcut2 - precut2
-        f018_09_insts = f018_09_insts[:precut1] + f018_09_insts[postcut1:precut2] + f018_09_insert_insts + f018_09_insts[postcut2:]
-        for l in f018_09_labels:
-            if l.label_offset > precut1:
-                if l.label_offset > precut2:
-                    l.label_offset-=diff2
-                    l.label_offset+=len(f018_09_insert_insts)
-                l.label_offset-=diff1
-                if l.label_offset < 0:
-                    l.label_offset = 1
-                    #TODO: Do better than just move the labels
+            precut1 = 35
+            postcut1 = 161
+            precut2 = 171
+            postcut2 = 247
+            diff1 = postcut1 - precut1
+            diff2 = postcut2 - precut2
+            f018_09_insts = f018_09_insts[:precut1] + f018_09_insts[postcut1:precut2] + f018_09_insert_insts + f018_09_insts[postcut2:]
+            for l in f018_09_labels:
+                if l.label_offset > precut1:
+                    if l.label_offset > precut2:
+                        l.label_offset-=diff2
+                        l.label_offset+=len(f018_09_insert_insts)
+                    l.label_offset-=diff1
+                    if l.label_offset < 0:
+                        l.label_offset = 1
+                        #TODO: Do better than just move the labels
+        else: #Specter 1 model swap
+            f018_09_insts[37] = inst("PUSHIS",self.get_checks_boss_id("Specter 1",world))
+            f018_09_insts[182] = inst("PUSHIS",self.get_checks_boss_id("Specter 1",world))
+            f018_09_insts[287] = inst("PUSHIS",self.get_checks_boss_id("Specter 1",world))
+            f018_09_insts = f018_09_insts[:161] + self.get_flag_reward_insts("Specter 1",world) + f018_09_insts[161:]
+            for l in f018_09_labels:
+                if l.label_offset > 161:
+                    l.label_offset+=len(self.get_flag_reward_insts("Specter 1",world))
+            f018_obj.changeNameByLookup("Specter", self.get_checks_boss_name("Specter 1",world, immersive=True))
         f018_obj.changeProcByIndex(f018_09_insts, f018_09_labels, f018_09_room)
         #Change the end warp to LoA Lobby to Ginza in front of terminal.
         f018_wap = bytearray(self.dds3.get_file_from_path(custom_vals.WAP_PATH['f018']).read())
@@ -1207,10 +1418,21 @@ class Script_Modifier:
         f019_obj.appendProc(f019_troll_callback_insts,[],f019_troll_callback_str)
         self.insert_callback('f019',0x1350,f019_troll_callback_str)
 
-        f019_troll_proc = f019_obj.getProcIndexByLabel("006_start") #Change troll model to new boss
+        f019_troll_proc = f019_obj.getProcIndexByLabel("006_start") 
         f019_troll_insts, f019_troll_labels = f019_obj.getProcInstructionsLabelsByIndex(f019_troll_proc)
-        f019_troll_insts[13] = inst("PUSHIS",self.get_checks_boss_id("Troll",world))
-        f019_troll_insts[44] = inst("PUSHIS",self.get_checks_boss_id("Troll",world))
+        if config_settings.shortest_cutscenes: #Remove troll cutscene
+            f019_troll_precut = 43
+            f019_troll_postcut = 104
+            f019_troll_insts = f019_troll_insts[:f019_troll_precut] + f019_troll_insts[f019_troll_postcut:]
+            f019_troll_diff = f019_troll_postcut - f019_troll_precut
+            for l in f019_troll_labels:
+                if l.label_offset > f019_troll_precut:
+                    l.label_offset-=f019_troll_diff
+                    if l.label_offset < 0:
+                        l.label_offset = 1
+        else: #Change troll model to new boss
+            f019_troll_insts[13] = inst("PUSHIS",self.get_checks_boss_id("Troll",world))
+            f019_troll_insts[44] = inst("PUSHIS",self.get_checks_boss_id("Troll",world))
         f019_obj.changeProcByIndex(f019_troll_insts, f019_troll_labels, f019_troll_proc)
         
         f019_obj.changeMessageByIndex(assembler.message("> The door was locked by^n^r"+self.get_checks_boss_name("Troll",world)+"^p.^x> Will you unlock it?" ,"F019_DOOR01a"),0x51)        
@@ -1299,7 +1521,8 @@ class Script_Modifier:
         f022_rr_hint_msg = f022_obj.appendMessage("You sense the presence of^n^r"+self.get_checks_boss_name("Red Rider",world)+"^p.","RR_HINT")
         f022_obj.changeProcByIndex(f022_mata_callback_insts,[],f022_mata_callback)
 
-        f022_obj.changeProcByIndex(f022_013_e1_insts, f022_013_e1_labels, f022_mata_room)
+        if not config_settings.longest_cutscenes:
+            f022_obj.changeProcByIndex(f022_013_e1_insts, f022_013_e1_labels, f022_mata_room)
         
         f022_rr_proc = f022_obj.getProcIndexByLabel('010_r_rider')
         f022_rr_insts, f022_rr_labels = f022_obj.getProcInstructionsLabelsByIndex(f022_rr_proc)
@@ -1368,7 +1591,12 @@ class Script_Modifier:
                 assembler.label("RRIDER_FOUGHT",45),
                 assembler.label("RRIDER_RAN",42)
             ]
-        f022_obj.changeProcByIndex(f022_10_insts, f022_10_labels, f022_10_proc)
+        if not config_settings.longest_cutscenes:
+            f022_obj.changeProcByIndex(f022_10_insts, f022_10_labels, f022_10_proc)
+        else:
+            f022_10_insts, f022_10_labels = f022_obj.getProcInstructionsLabelsByIndex(f022_10_proc)
+            f022_10_insts[4] = inst("PUSHIS",0x3f4)
+            f022_obj.changeProcByIndex(f022_10_insts, f022_10_labels, f022_10_proc)
 
         f022_rrider_callback_str = "RR_CB"
         f022_rrider_rwms_index = f022_obj.appendMessage(self.get_reward_str("Red Rider",world), "RR_REWARD")
@@ -1392,6 +1620,68 @@ class Script_Modifier:
 
         if SCRIPT_DEBUG:
             self.script_debug_out(f022_obj,'f022.bf')
+            
+        #Matador fight cutscene model swap
+        e740_obj = self.get_script_obj_by_name('e740')
+        e740_10_proc = e740_obj.getProcIndexByLabel("e740_010")
+        e740_10_insts, e740_10_labels = e740_obj.getProcInstructionsLabelsByIndex(e740_10_proc)
+        e740_10_insts[144] = inst("PUSHIS",0xa) #Update animations
+        e740_10_insts[145] = inst("PUSHIS",0xa)
+        e740_10_insts[175] = inst("PUSHIS",0x3)
+        e740_10_insts[177] = inst("PUSHIS",0xa)
+        e740_10_insts[178] = inst("PUSHIS",0x5)
+        e740_10_insts[247] = inst("PUSHIS",0x1)
+        e740_10_insts[248] = inst("PUSHIS",0xa)
+        e740_10_insts[249] = inst("PUSHIS",0xa)
+        e740_10_insts[250] = inst("PUSHIS",0x0)
+        e740_10_insts[281] = inst("PUSHIS",0xa)
+        e740_10_insts[282] = inst("PUSHIS",0xa)
+        e740_10_insts[283] = inst("PUSHIS",0x1)
+        e740_10_insert_insts = [
+            inst("PUSHIS",0x751), #Possibly open LoA flag
+            inst("COMM",8)
+        ]
+        e740_10_insts = e740_10_insts[:133] + e740_10_insert_insts + e740_10_insts[133:]
+        e740_obj.changeProcByIndex(e740_10_insts, e740_10_labels, e740_10_proc)
+
+        e740_main_proc = e740_obj.getProcIndexByLabel("e740_main")
+        e740_main_insts, e740_main_labels = e740_obj.getProcInstructionsLabelsByIndex(e740_main_proc)
+        e740_main_insts[54] = inst("PUSHIS",self.get_checks_boss_id("Matador",world))
+        e740_main_insts[55] = inst("PUSHIS",0x6)
+        e740_main_insts[56] = inst("COMM",0x15)
+        #e740_main_insts = e740_main_insts[:196] + e740_main_insts[200:]
+        e740_obj.changeProcByIndex(e740_main_insts, e740_main_labels, e740_main_proc)
+
+        e740_matador_name_id = e740_obj.sections[3].messages[0x3].name_id
+        e740_matador_message = assembler.message("It is meant for a master^nswordsman...^n^xone who, amidst blood and^napplause, has put an end^nto countless lives...^xThat warrior is I, ^r"+self.get_checks_boss_name("Matador",world, immersive=True)+"^p.^n^xIt's unfortunate that we have^nno spectators,^n^xbut I believe this will be^nan excellent show regardless,^nas you and I contend for^nthe candelabra." ,"boss_01")
+        e740_matador_message.name_id = e740_matador_name_id
+        e740_obj.changeMessageByIndex(e740_matador_message,0x3)
+        e740_obj.changeNameByLookup("Matador", self.get_checks_boss_name("Matador",world, immersive=True))  
+
+        self.dds3.add_new_file(custom_vals.SCRIPT_OBJ_PATH['e740'], BytesIO(bytes(e740_obj.toBytes())))
+        
+        #Red Rider fight cutscene model swap
+        e744_obj = self.get_script_obj_by_name('e744')
+        e744_10_proc = e744_obj.getProcIndexByLabel("e744_010")
+        e744_10_insts, e744_10_labels = e744_obj.getProcInstructionsLabelsByIndex(e744_10_proc)
+        e744_10_insts[58] = inst("PUSHIS",0x0) #Update animations
+        e744_10_insts[115] = inst("PUSHIS",0x9)
+        e744_10_insts[163] = inst("PUSHIS",0x7)
+        e744_10_insts = e744_10_insts[:128] + e744_10_insts[139:149] + e744_10_insts[160:]
+        e744_obj.changeProcByIndex(e744_10_insts, e744_10_labels, e744_10_proc)
+
+        e744_main_proc = e744_obj.getProcIndexByLabel("e744_main")
+        e744_main_insts, e744_main_labels = e744_obj.getProcInstructionsLabelsByIndex(e744_main_proc)
+        e744_main_insts[54] = inst("PUSHIS",self.get_checks_boss_id("Red Rider",world))
+        e744_main_insts[55] = inst("PUSHIS",0x6)
+        e744_main_insts[56] = inst("COMM",0x15)
+        if config_settings.menorah_groups: #Keep menorah flag and textbox if the vanilla flag is on
+            e744_main_insts = e744_main_insts[:195] + e744_main_insts[203:]
+        e744_obj.changeProcByIndex(e744_main_insts, e744_main_labels, e744_main_proc)
+
+        e744_obj.changeNameByLookup("Red Rider", self.get_checks_boss_name("Red Rider",world, immersive=True))
+        
+        self.dds3.add_new_file(custom_vals.SCRIPT_OBJ_PATH['e744'], BytesIO(bytes(e744_obj.toBytes())))
 
         #Cutscene removal in Ikebukuro f023
         #913 set in Ikebukuro. 54b 54c 54d - 540, 549, 56C, 931, 75E
@@ -1449,13 +1739,17 @@ class Script_Modifier:
             assembler.label("DAISOUJOU_FOUGHT",43),
             assembler.label("DAISOUJOU_RAN",40)
         ]
+        #if config_settings.longest_cutscenes: #Replace battle call with Daisoujou's event
+        #    f023_03_insts[37] = inst("PUSHIS", 0x2e6)
+        #    f023_03_insts[38] = inst("COMM", 0x66)
         if config_settings.menorah_groups: #Remove candelabra if randomized
             del f023_03_insts[27:29]
             f023_03_labels = [
                 assembler.label("DAISOUJOU_FOUGHT",41),
                 assembler.label("DAISOUJOU_RAN",38)
             ]
-        f023_obj.changeProcByIndex(f023_03_insts, f023_03_labels, f023_03_room)
+        if not config_settings.longest_cutscenes:
+            f023_obj.changeProcByIndex(f023_03_insts, f023_03_labels, f023_03_room)
 
         f023_03_room_2 = f023_obj.getProcIndexByLabel("003_01eve_01") #Completely copy-pasted from the above, but is triggered from a different position. Just call the other one dammit.
         f023_03_2_insts = [
@@ -1560,6 +1854,29 @@ class Script_Modifier:
 
         if SCRIPT_DEBUG:
             self.script_debug_out(f023_obj,'f023.bf')
+            
+        #Daisojou fight cutscene model swap
+        e742_obj = self.get_script_obj_by_name('e742')
+        e742_10_proc = e742_obj.getProcIndexByLabel("e742_010")
+        e742_10_insts, e742_10_labels = e742_obj.getProcInstructionsLabelsByIndex(e742_10_proc)
+        e742_10_insts[66] = inst("PUSHIS",0x2) #Update animations
+        e742_10_insts[112] = inst("PUSHIS",0x2)
+        e742_10_insts[163] = inst("PUSHIS",0x0)
+        e742_10_insts[200] = inst("PUSHIS",0x4)
+        e742_obj.changeProcByIndex(e742_10_insts, e742_10_labels, e742_10_proc)
+
+        e742_main_proc = e742_obj.getProcIndexByLabel("e742_main")
+        e742_main_insts, e742_main_labels = e742_obj.getProcInstructionsLabelsByIndex(e742_main_proc)
+        e742_main_insts[54] = inst("PUSHIS",self.get_checks_boss_id("Daisoujou",world))
+        e742_main_insts[55] = inst("PUSHIS",0x6)
+        e742_main_insts[56] = inst("COMM",0x15)
+        if config_settings.menorah_groups: #Keep menorah flag and textbox if the vanilla flag is on
+            e742_main_insts = e742_main_insts[:197] + e742_main_insts[205:]
+        e742_obj.changeProcByIndex(e742_main_insts, e742_main_labels, e742_main_proc)
+
+        e742_obj.changeNameByLookup("Daisoujou", self.get_checks_boss_name("Daisoujou",world, immersive=True))  
+
+        self.dds3.add_new_file(custom_vals.SCRIPT_OBJ_PATH['e742'], BytesIO(bytes(e742_obj.toBytes())))
 
         #Cutscene removal in Mantra HQ f024
         #560 on. Put into jail cell scene.
@@ -1618,18 +1935,22 @@ class Script_Modifier:
 
         f024_10_room = f024_obj.getProcIndexByLabel("010_start")
         f024_10_insts, f024_10_labels = f024_obj.getProcInstructionsLabelsByIndex(f024_10_room)
+        #Fix Orthrus, Yaksini, and Thor animations
+        #f024_10_insts[359] = inst("PUSHLIX", 0x3a)
+        #f024_10_insts[501] = inst("PUSHLIX", 0x3b)
+        #f024_10_insts[670] = inst("PUSHLIX", 0x39)
         f024_10_insert_insts = [
             inst("PUSHIS", self.get_checks_boss_id("Orthrus",world)), 
             inst("PUSHIS",6),
             inst("COMM",0x15),
             inst("PUSHREG"),
-            inst("POPLIX",0x3a), #store the result in a global variable
+            inst("POPIX",0x8), #store the result in a global variable
             inst("PUSHSTR",1576), #01pos_12
             inst("COMM",0x94),
             inst("PUSHREG"),
-            inst("PUSHLIX",0x3a),
+            inst("PUSHIX",0x8),
             inst("COMM",0x4a),
-            inst("PUSHLIX",0x3a),
+            inst("PUSHIX",0x8),
             inst("COMM",0x21e)
         ]
         f024_orthrus_rwms = f024_obj.appendMessage(self.get_reward_str("Orthrus",world),"ORTHRUS_RWMS")
@@ -1638,13 +1959,13 @@ class Script_Modifier:
             inst("PUSHIS",6),
             inst("COMM",0x15),
             inst("PUSHREG"),
-            inst("POPLIX",0x3b), #store the result in a global variable
+            inst("POPIX",0x9), #store the result in a global variable
             inst("PUSHSTR",1576), #01pos_12
             inst("COMM",0x94),
             inst("PUSHREG"),
-            inst("PUSHLIX",0x3b),
+            inst("PUSHIX",0x9),
             inst("COMM",0x4a),
-            inst("PUSHLIX",0x3b),
+            inst("PUSHIX",0x9),
             inst("COMM",0x21e),
             inst("COMM",1),
             inst("PUSHIS",f024_orthrus_rwms), #Orthrus reward message
@@ -1657,13 +1978,13 @@ class Script_Modifier:
             inst("PUSHIS",6),
             inst("COMM",0x15),
             inst("PUSHREG"),
-            inst("POPLIX",0x39), #store the result in a global variable
+            inst("POPIX",0xa), #store the result in a global variable
             inst("PUSHSTR",1576), #01pos_12
             inst("COMM",0x94),
             inst("PUSHREG"),
-            inst("PUSHLIX",0x39),
+            inst("PUSHIX",0xa),
             inst("COMM",0x4a),
-            inst("PUSHLIX",0x39),
+            inst("PUSHIX",0xa),
             inst("COMM",0x21e),
             inst("COMM",1),
             inst("PUSHIS",f024_yaksini_rwms), #Yaksini reward message
@@ -1737,16 +2058,6 @@ class Script_Modifier:
 
         f024_obj.changeProcByIndex(f024_10_insts, f024_10_labels, f024_10_room)
         
-        #f024_names = f024_obj.sections[3].names.names
-        #f024_yaksini_name_index = f024_names.index("Yaksini")
-        #f024_names[f024_yaksini_name_index] = self.get_checks_boss_name("Yaksini",world)
-        #f024_yaksini_name_len_diff = len(self.get_checks_boss_name("Yaksini",world)) - 7
-        #f024_names_pointers = f024_obj.sections[3].names.names_pointers
-        #for i in range(f024_yaksini_name_index + 1, len(f024_names_pointers)):
-        #    f024_names_pointers[i] = f024_names_pointers[i] + f024_yaksini_name_len_diff
-        #f024_obj.sections[3].m_size += f024_yaksini_name_len_diff
-        #f024_obj.sections[3].rolling_pointer += f024_yaksini_name_len_diff
-        #f024_obj.sections[4].offset += f024_yaksini_name_len_diff
         f024_obj.changeNameByLookup("Orthrus", self.get_checks_boss_name("Orthrus",world, immersive=True))
         f024_obj.changeNameByLookup("Yaksini", self.get_checks_boss_name("Yaksini",world, immersive=True))
         f024_obj.changeNameByLookup("Thor", self.get_checks_boss_name("Thor 1",world, immersive=True))
@@ -1768,6 +2079,27 @@ class Script_Modifier:
 
         if SCRIPT_DEBUG:
             self.script_debug_out(f024_obj,'f024.bf')
+
+        e661_obj = self.get_script_obj_by_name('e661') #Remove chiaki cutscene in mantra HQ
+        e661_insts = [
+            inst("PROC",0),
+            inst("PUSHIS",0x10),
+            inst("PUSHIS",1),
+            inst("COMM",0xf),
+            inst("COMM",1),
+            inst("PUSHIS",0),
+            inst("COMM",0),
+            inst("COMM",2),
+            inst("COMM",0x23),#FLD_EVENT_END2
+            inst("COMM",0x2e),
+            inst("END")
+        ]
+        e661_obj.changeMessageByIndex(assembler.message("You have no business here." ,"MSG_020_1"), 0x0)
+        e661_obj.changeProcByIndex(e661_insts, [], 0)
+        self.dds3.add_new_file(custom_vals.SCRIPT_OBJ_PATH['e661'], BytesIO(bytes(e661_obj.toBytes())))
+
+        if SCRIPT_DEBUG:
+            self.script_debug_out(e661_obj,'e661.bf')
 
         #Cutscene removal in East Nihilo f020
         #Shorten Koppa & Incubus encounter
@@ -1807,6 +2139,14 @@ class Script_Modifier:
         f020_08_insts, f020_08_labels = f020_obj.getProcInstructionsLabelsByIndex(f020_08_room)
         precut = 48
         postcut = 179
+        if config_settings.longest_cutscenes:
+            postcut = precut
+            incubus_replacement = world.demon_map[0x76]
+            koppa_replacement = world.demon_map[0x34]
+            f020_08_insts[51] = inst("PUSHIS", incubus_replacement)
+            f020_08_insts[63] = inst("PUSHIS", koppa_replacement)
+            f020_obj.changeNameByLookup("Incubus", world.demons[incubus_replacement].name)
+            f020_obj.changeNameByLookup("Koppa", world.demons[koppa_replacement].name)
         diff = postcut-precut
 
         #turn on 4eb, submerge the floor, display message saying the kilas were inserted
@@ -1985,6 +2325,18 @@ class Script_Modifier:
             new_insts.extend(p_insts[curr_cut:])
             f020_obj.changeProcByIndex(new_insts,p_labels,p_proc)
 
+        #Shorten Eligor 1
+        f020_30_proc = f020_obj.getProcIndexByLabel("030_start")
+        f020_30_insts, f020_30_labels = f020_obj.getProcInstructionsLabelsByIndex(f020_30_proc)
+        precut = 13
+        postcut = 116
+        diff = postcut - precut
+        for l in f020_30_labels:
+            if l.label_offset > precut:
+                l.label_offset-=diff
+        f020_30_insts = f020_30_insts[:precut] + f020_30_insts[postcut:]
+        f020_obj.changeProcByIndex(f020_30_insts,f020_30_labels,f020_30_proc)
+
         #Shorten Ose.
         #Door event is 013_01eve_01
         #Cut out 50-58 (inclusive both)
@@ -2012,7 +2364,8 @@ class Script_Modifier:
                 l.label_offset-=diff
                 l.label_offset+=len(f020_13_insert_insts)
         f020_13_insts = f020_13_insts[:precut] + f020_13_insert_insts + f020_13_insts[postcut:]
-        f020_obj.changeProcByIndex(f020_13_insts,f020_13_labels,f020_13_proc)
+        if not config_settings.longest_cutscenes:
+            f020_obj.changeProcByIndex(f020_13_insts,f020_13_labels,f020_13_proc)
 
         f020_berith_rwms_index = f020_obj.appendMessage(self.get_reward_str("Berith",world),"BERITH_REWARD")
         f020_berith_rwms_insts = [
@@ -2051,22 +2404,41 @@ class Script_Modifier:
         f020_berith_proc = f020_obj.getProcIndexByLabel("024_01eve_01") #Change berith model to new boss
         f020_berith_insts, f020_berith_labels = f020_obj.getProcInstructionsLabelsByIndex(f020_berith_proc)
         f020_berith_insts[25] = inst("PUSHIS",self.get_checks_boss_id("Berith",world))
+        if config_settings.shortest_cutscenes: #Remove berith cutscene if short setting is on
+            precut = 13
+            postcut = 178
+            diff = postcut - precut
+            for l in f020_berith_labels:
+                if l.label_offset > precut:
+                    l.label_offset-=diff
+                    if l.label_offset < 1:
+                        l.label_offset = 1
+            f020_berith_insts = f020_berith_insts[:precut] + f020_berith_insts[postcut:]
         f020_obj.changeProcByIndex(f020_berith_insts, f020_berith_labels, f020_berith_proc)
         f020_eligor_name_id = f020_obj.sections[3].messages[0x16].name_id
         f020_eligor_message = assembler.message("^r"+self.get_checks_boss_name("Berith",world)+"^p says that's enough..." ,"HEISHI01")
         f020_eligor_message.name_id = f020_eligor_name_id
         f020_obj.changeMessageByIndex(f020_eligor_message,0x16)        
-        #Unsure if this is the correct door, look carefully
 
         f020_kaiwan_proc = f020_obj.getProcIndexByLabel("027_start") #Change kaiwan model to new boss
         f020_kaiwan_insts, f020_kaiwan_labels = f020_obj.getProcInstructionsLabelsByIndex(f020_kaiwan_proc)
         f020_kaiwan_insts[311] = inst("PUSHIS",self.get_checks_boss_id("Kaiwan",world)) #Middle Kaiwan
         f020_kaiwan_insts[323] = inst("PUSHIS",self.get_checks_boss_id("Kaiwan",world, index = 1)) #Kaiwan on the left
         f020_kaiwan_insts[335] = inst("PUSHIS",self.get_checks_boss_id("Kaiwan",world, index=2)) #Kaiwan on the right
+        if config_settings.shortest_cutscenes: #Remove berith cutscene if short setting is on
+            precut = 301
+            postcut = 391
+            diff = postcut - precut
+            for l in f020_kaiwan_labels:
+                if l.label_offset > precut:
+                    l.label_offset-=diff
+                    if l.label_offset < 1:
+                        l.label_offset = 1
+            f020_kaiwan_insts = f020_kaiwan_insts[:precut] + f020_kaiwan_insts[postcut:]
         f020_obj.changeProcByIndex(f020_kaiwan_insts, f020_kaiwan_labels, f020_kaiwan_proc)
         f020_obj.changeMessageByIndex(assembler.message("> ^r"+self.get_checks_boss_name("Kaiwan",world)+"^p unlocked the door.^n^x> Will you enter?" ,"F020_KIUNDOOR02"),0x6e)        
 
-        #Ose hint message, may be the wrong door
+        #Ose hint message
         f020_obj.changeMessageByIndex(assembler.message("> You sense ^r"+self.get_checks_boss_name("Ose",world)+"^p^nbeyond the door.^n^x> Will you enter?" ,"HON_ENT"),0x4c)        
         
         f020_obj.changeNameByLookup("Berith", self.get_checks_boss_name("Berith",world, immersive=True))
@@ -2081,6 +2453,88 @@ class Script_Modifier:
 
         if SCRIPT_DEBUG:
             self.script_debug_out(f020_obj,'f020.bf')
+            
+        #Ose fight cutscene model swap
+        e634_obj = self.get_script_obj_by_name('e634')
+        e634_80_proc = e634_obj.getProcIndexByLabel("e634_080")
+        e634_80_insts, e634_80_labels = e634_obj.getProcInstructionsLabelsByIndex(e634_80_proc)
+        e634_80_insts[270] = inst("PUSHIS",0x0) #Update animations
+        e634_80_insts[346] = inst("PUSHIS",0x0)
+        e634_80_insts[437] = inst("PUSHIS",0x2)
+        precut = 86
+        postcut = 194
+        precut2 = 446
+        postcut2 = 450
+        diff = postcut - precut
+        for l in e634_80_labels:
+            if l.label_offset > precut:
+                l.label_offset-=diff
+                if l.label_offset < 0:
+                    l.label_offset = 1
+        e634_80_insts = e634_80_insts[:precut] + e634_80_insts[postcut:precut2] + e634_80_insts[postcut2:]
+        e634_obj.changeProcByIndex(e634_80_insts, e634_80_labels, e634_80_proc)
+
+        e634_10_5_proc = e634_obj.getProcIndexByLabel("e634_010_5")
+        e634_10_5_insts, e634_10_5_labels = e634_obj.getProcInstructionsLabelsByIndex(e634_10_5_proc)
+        e634_10_5_insts = [e634_10_5_insts[0]] + [inst("END")]
+        e634_obj.changeProcByIndex(e634_10_5_insts, e634_10_5_labels, e634_10_5_proc)
+
+        e634_10_6_proc = e634_obj.getProcIndexByLabel("e634_010_6")
+        e634_10_6_insts, e634_10_6_labels = e634_obj.getProcInstructionsLabelsByIndex(e634_10_6_proc)
+        e634_10_6_insts = [e634_10_6_insts[0]] + [inst("END")]
+        e634_obj.changeProcByIndex(e634_10_6_insts, e634_10_6_labels, e634_10_6_proc)
+        
+        e634_10_proc = e634_obj.getProcIndexByLabel("e634_010")
+        e634_10_insts, e634_10_labels = e634_obj.getProcInstructionsLabelsByIndex(e634_10_proc)
+        e634_10_insts = [e634_10_insts[0]] + [inst("END")]
+        e634_obj.changeProcByIndex(e634_10_insts, e634_10_labels, e634_10_proc)
+
+        e634_20_proc = e634_obj.getProcIndexByLabel("e634_020")
+        e634_20_insts, e634_20_labels = e634_obj.getProcInstructionsLabelsByIndex(e634_20_proc)
+        e634_20_insts = [e634_20_insts[0]] + [inst("END")]
+        for l in e634_20_labels:
+            l.label_offset = 1
+        e634_obj.changeProcByIndex(e634_20_insts, e634_20_labels, e634_20_proc)
+        
+        e634_30_proc = e634_obj.getProcIndexByLabel("e634_030")
+        e634_30_insts, e634_30_labels = e634_obj.getProcInstructionsLabelsByIndex(e634_30_proc)
+        e634_30_insts = [e634_30_insts[0]] + [inst("END")]
+        for l in e634_30_labels:
+            l.label_offset = 1
+        e634_obj.changeProcByIndex(e634_30_insts, e634_30_labels, e634_30_proc)
+
+        e634_main_proc = e634_obj.getProcIndexByLabel("e634_main")
+        e634_main_insts, e634_main_labels = e634_obj.getProcInstructionsLabelsByIndex(e634_main_proc)
+        e634_main_insts[192] = inst("PUSHIS",0x78) #Load shorter cutscene
+        e634_main_insts[243] = inst("PUSHIS",self.get_checks_boss_id("Ose",world)) #Load demon model in the header
+        e634_main_insts[244] = inst("PUSHIS",0x6)
+        e634_main_insts[245] = inst("COMM",0x15)
+        e634_main_insts[143] = inst("COMM", 0x8)
+        e634_main_insts[276] = inst("COMM", 0x8) #Stop terminal from deactivating
+        e634_main_insert_insts = [
+            inst("PUSHSTR", 0x153),#p07
+            inst("COMM", 0x94),
+            inst("PUSHREG"),
+            inst("PUSHIX", 0x13),
+            inst("COMM", 0x4a), #Commands that use the model's integer index and are always run when loading
+        ]
+        precut = 186
+        postcut = 192
+        precut2 = 201
+        postcut2 = 207
+        diff = postcut - precut + postcut2 - precut2
+        for l in e634_main_labels:
+                if l.label_offset > precut:
+                    l.label_offset-=diff
+                    if l.label_offset < 1:
+                        l.label_offset = 1
+        e634_main_insts = e634_main_insts[:248] + e634_main_insert_insts + e634_main_insts[248:]
+        e634_main_insts = e634_main_insts[:precut] + e634_main_insts[postcut:precut2] + e634_main_insts[postcut2:]
+        e634_obj.changeProcByIndex(e634_main_insts, e634_main_labels, e634_main_proc)
+
+        e634_obj.changeNameByLookup("Ose", self.get_checks_boss_name("Ose",world, immersive=True))  
+
+        self.dds3.add_new_file(custom_vals.SCRIPT_OBJ_PATH['e634'], BytesIO(bytes(e634_obj.toBytes())))
 
         f003_obj = self.get_script_obj_by_name('f003')
         f003_proclen = len(f003_obj.p_lbls().labels)
@@ -2176,7 +2630,8 @@ class Script_Modifier:
                 assembler.label("BIKER_RAN",38),
                 assembler.label("BIKER_FOUGHT",35)
             ]
-        f004_obj.changeProcByIndex(f004_biker_insts,f004_biker_labels,f004_biker_event)
+        if not config_settings.longest_cutscenes:
+            f004_obj.changeProcByIndex(f004_biker_insts,f004_biker_labels,f004_biker_event)
         f004_biker_callback_proc_str = "HBIKER_CB"
         f004_biker_callback_msg = f004_obj.appendMessage(self.get_reward_str("Hell Biker",world),"HBIKER_REWARD")
         f004_obj.changeMessageByIndex(assembler.message("You sense the presence of^n^r"+self.get_checks_boss_name("Hell Biker",world)+"^p.","HBIKER_HINT"),4)
@@ -2212,6 +2667,26 @@ class Script_Modifier:
 
         if SCRIPT_DEBUG:
             self.script_debug_out(f004_obj,'f004.bf')
+            
+        #Hell Biker fight cutscene model swap
+        e741_obj = self.get_script_obj_by_name('e741')
+        e741_10_proc = e741_obj.getProcIndexByLabel("e741_010")
+        e741_10_insts, e741_10_labels = e741_obj.getProcInstructionsLabelsByIndex(e741_10_proc)
+        e741_10_insts[163] = inst("PUSHIS",0x3) #Update animations
+        e741_obj.changeProcByIndex(e741_10_insts, e741_10_labels, e741_10_proc)
+
+        e741_main_proc = e741_obj.getProcIndexByLabel("e741_main")
+        e741_main_insts, e741_main_labels = e741_obj.getProcInstructionsLabelsByIndex(e741_main_proc)
+        e741_main_insts[68] = inst("PUSHIS",self.get_checks_boss_id("Hell Biker",world))
+        e741_main_insts[69] = inst("PUSHIS",0x6)
+        e741_main_insts[70] = inst("COMM",0x15)
+        if config_settings.menorah_groups: #Keep menorah flag and textbox if the vanilla flag is on
+            e741_main_insts = e741_main_insts[:266] + e741_main_insts[272:]
+        e741_obj.changeProcByIndex(e741_main_insts, e741_main_labels, e741_main_proc)
+
+        e741_obj.changeNameByLookup("Hell Biker", self.get_checks_boss_name("Hell Biker",world, immersive=True))  
+
+        self.dds3.add_new_file(custom_vals.SCRIPT_OBJ_PATH['e741'], BytesIO(bytes(e741_obj.toBytes())))
 
         #Cutscene removal in Kabukicho Prison f025
         #Shorten forced Naga
@@ -2227,16 +2702,24 @@ class Script_Modifier:
         f025_mizuchi_room_insts, f025_mizuchi_room_labels = f025_obj.getProcInstructionsLabelsByIndex(f025_mizuchi_room)
         #28 - 87 both inclusive. Insert 595 and 863.
         #Probably don't need to change labels, but if you don't _443 is OoB, but it doesn't seem like it does anything since it was compiler made.
-        precut = 28
-        postcut = 88
-        f025_mizuchi_room_insert_insts = [
-            inst("PUSHIS",0x595),
-            inst("COMM",8),
-            inst("PUSHIS",0x863),
-            inst("COMM",8)
-        ] + self.get_flag_reward_insts("Mizuchi",world)
-        f025_mizuchi_room_labels[-1].label_offset = 0 #fixes _443 OoB warning.
-        f025_mizuchi_room_insts = f025_mizuchi_room_insts[:precut] + f025_mizuchi_room_insert_insts + f025_mizuchi_room_insts[postcut:]
+        if config_settings.shortest_cutscenes:
+            precut = 28
+            postcut = 88
+            f025_mizuchi_room_insert_insts = [
+                inst("PUSHIS",0x595),
+                inst("COMM",8),
+                inst("PUSHIS",0x863),
+                inst("COMM",8)
+            ] + self.get_flag_reward_insts("Mizuchi",world)
+            f025_mizuchi_room_labels[-1].label_offset = 0 #fixes _443 OoB warning.
+            f025_mizuchi_room_insts = f025_mizuchi_room_insts[:precut] + f025_mizuchi_room_insert_insts + f025_mizuchi_room_insts[postcut:]
+        else:
+            f025_mizuchi_room_insts[38] = inst("PUSHIS",self.get_checks_boss_id("Mizuchi",world))
+            f025_mizuchi_room_insts[84] = inst("PUSHIS", 0x595)
+            f025_mizuchi_room_insert_insts = self.get_flag_reward_insts("Mizuchi",world)
+            f025_mizuchi_room_labels[-1].label_offset += len(f025_mizuchi_room_insert_insts)
+            f025_mizuchi_room_insts = f025_mizuchi_room_insts[:88] + f025_mizuchi_room_insert_insts + f025_mizuchi_room_insts[88:]
+            f025_obj.changeNameByLookup("Mizuchi", self.get_checks_boss_name("Mizuchi",world, immersive=True))  
         f025_obj.changeProcByIndex(f025_mizuchi_room_insts, f025_mizuchi_room_labels, f025_mizuchi_room)
         f025_obj.changeMessageByIndex(assembler.message(self.get_reward_str("Mizuchi",world),"MIZUCHI_REWARD"),0x62)
         f025_obj.changeMessageByIndex(assembler.message("> You sense ^r"+self.get_checks_boss_name("Mizuchi",world)+"^p^nbeyond the door.^n^x> Will you enter?" ,"F025_DOOR01"),0xb4)        
@@ -2352,6 +2835,16 @@ class Script_Modifier:
         f026_ongyo_proc = f026_obj.getProcIndexByLabel("017_start") #Change ongyo-ki model to new boss and add hint message
         f026_ongyo_insts, f026_ongyo_labels = f026_obj.getProcInstructionsLabelsByIndex(f026_ongyo_proc)
         f026_ongyo_insts[17] = inst("PUSHIS",self.get_checks_boss_id("Ongyo-Ki",world))
+        if config_settings.shortest_cutscenes:
+            precut = 8
+            postcut = 140
+            diff = postcut - precut
+            for l in f026_ongyo_labels:
+                    if l.label_offset > precut:
+                        l.label_offset-=diff
+                        if l.label_offset < 1:
+                            l.label_offset = 1
+            f026_ongyo_insts = f026_ongyo_insts[:precut] + f026_ongyo_insts[postcut:]
         f026_obj.changeProcByIndex(f026_ongyo_insts, f026_ongyo_labels, f026_ongyo_proc)
         f026_obj.changeMessageByIndex(assembler.message("> You sense ^r"+self.get_checks_boss_name("Ongyo-Ki",world)+"^p^nbeyond the door..." ,"F26_FUIN_YOKI"),0x2b)
         
@@ -2460,7 +2953,13 @@ class Script_Modifier:
                 assembler.label("PRIDER_FOUGHT",45),
                 assembler.label("PRIDER_RAN",42)
             ]
-        f027_obj.changeProcByIndex(f027_16_insts, f027_16_labels, f027_16_proc)
+        if not config_settings.longest_cutscenes:
+            f027_obj.changeProcByIndex(f027_16_insts, f027_16_labels, f027_16_proc)
+        else:
+            f027_16_insts, f027_16_labels = f027_obj.getProcInstructionsLabelsByIndex(f027_16_proc)
+            f027_16_insts[1] = inst("PUSHIS",0x109)
+            f027_16_insts[4] = inst("PUSHIS",0x3f4)
+            f027_obj.changeProcByIndex(f027_16_insts, f027_16_labels, f027_16_proc)
 
         f027_prider_callback_str = "PR_CB"
         f027_prider_rwms_index = f027_obj.appendMessage(self.get_reward_str("Pale Rider",world), "PR_REWARD")
@@ -2520,6 +3019,35 @@ class Script_Modifier:
 
         if SCRIPT_DEBUG:
             self.script_debug_out(f027_obj,'f027.bf')
+            
+        #Pale Rider fight cutscene model swap
+        e746_obj = self.get_script_obj_by_name('e746')
+        e746_10_proc = e746_obj.getProcIndexByLabel("e746_010")
+        e746_10_insts, e746_10_labels = e746_obj.getProcInstructionsLabelsByIndex(e746_10_proc)
+        e746_10_insts[95] = inst("PUSHIS",0x2) #Update animations
+        e746_10_insts[122] = inst("PUSHIS",0x0)
+        e746_10_insts[155] = inst("PUSHIS",0x5)
+        e746_10_insts[179] = inst("PUSHIS",0xf)
+        e746_10_insts[206] = inst("PUSHIS",0xc)
+        e746_10_insts[73] = inst("PUSHSTR", 104)
+        e746_10_insts[77] = inst("PUSHSTR", 129)
+        e746_10_insts[81] = inst("PUSHSTR", 147)
+        e746_10_insts[84] = inst("PUSHSTR", 138) #Fix camera to show the boss at all times
+        e746_10_insts = e746_10_insts[:139] + e746_10_insts[150:161] +e746_10_insts[176:] #Fix camera
+        e746_obj.changeProcByIndex(e746_10_insts, e746_10_labels, e746_10_proc)
+
+        e746_main_proc = e746_obj.getProcIndexByLabel("e746_main")
+        e746_main_insts, e746_main_labels = e746_obj.getProcInstructionsLabelsByIndex(e746_main_proc)
+        e746_main_insts[54] = inst("PUSHIS",self.get_checks_boss_id("Pale Rider",world))
+        e746_main_insts[55] = inst("PUSHIS",0x6)
+        e746_main_insts[56] = inst("COMM",0x15)
+        if config_settings.menorah_groups: #Keep menorah flag and textbox if the vanilla flag is on
+            e746_main_insts = e746_main_insts[:182] + e746_main_insts[188:]
+        e746_obj.changeProcByIndex(e746_main_insts, e746_main_labels, e746_main_proc)
+
+        e746_obj.changeNameByLookup("Pale Rider", self.get_checks_boss_name("Pale Rider",world, immersive=True))
+        
+        self.dds3.add_new_file(custom_vals.SCRIPT_OBJ_PATH['e746'], BytesIO(bytes(e746_obj.toBytes())))
 
         #Change e644 to fight Black Frost. Normally it's the Sakahagi cutscene in Asakusa, but we're repurposing it so no two bosses are in the same location.
         #Flag is 2e
@@ -2607,20 +3135,21 @@ class Script_Modifier:
         
         f035_09_index = f035_obj.getProcIndexByLabel('009_01eve_01')
         f035_09_insts, f035_09_labels = f035_obj.getProcInstructionsLabelsByIndex(f035_09_index)
-        f035_futomimi_insert_insts = [
-            inst("PUSHIS",0x56),
-            inst("COMM",8),
-            inst("PUSHIS",0x2a2), #0x2a1 is archangels
-            inst("COMM",0x67)
-        ]
-        precut = 156
-        postcut = 158
-        diff = postcut-precut
-        for l in f035_09_labels:
-            if l.label_offset > precut:
-                l.label_offset -= diff
-                l.label_offset += len(f035_futomimi_insert_insts)
-        f035_09_insts = f035_09_insts[:precut] + f035_futomimi_insert_insts + f035_09_insts[postcut:]
+        if not config_settings.longest_cutscenes: #Immediately start fight if cutscenes are off
+            f035_futomimi_insert_insts = [
+                inst("PUSHIS",0x56),
+                inst("COMM",8),
+                inst("PUSHIS",0x2a2), #0x2a1 is archangels
+                inst("COMM",0x67)
+            ]
+            precut = 156
+            postcut = 158
+            diff = postcut-precut
+            for l in f035_09_labels:
+                if l.label_offset > precut:
+                    l.label_offset -= diff
+                    l.label_offset += len(f035_futomimi_insert_insts)
+            f035_09_insts = f035_09_insts[:precut] + f035_futomimi_insert_insts + f035_09_insts[postcut:]
         if config_settings.open_yurakucho: #Use flag that we know is off until after both fights
             f035_09_insts[109] = inst("PUSHIS",0x81)
         f035_obj.changeProcByIndex(f035_09_insts, f035_09_labels, f035_09_index)
@@ -2660,7 +3189,7 @@ class Script_Modifier:
             inst("COMM",0),
             inst("COMM",2),
             
-        ] + self.get_flag_reward_insts("Futomimi",world) + [
+        #] + self.get_flag_reward_insts("Futomimi",world) + [
             inst("COMM",0x61),
             inst("PUSHIS", 0x81),
             inst("COMM", 0x8),
@@ -2680,11 +3209,11 @@ class Script_Modifier:
             inst("COMM",0x61),
             #inst("PUSHIS", 0x81), If anything is wierd because agree with chiaki is on, uncomment this
             #inst("COMM", 0x9),
-        ] + self.get_flag_reward_insts("Archangels",world) + [
+        ] + self.get_flag_reward_insts("Futomimi",world) + self.get_flag_reward_insts("Archangels",world) + [
             inst("END")
         ]
         f035_futomimi_callback_labels = [
-            assembler.label("ANGEL_FOUGHT",22 + len(self.get_flag_reward_insts("Futomimi",world)))
+            assembler.label("ANGEL_FOUGHT",22 )#+ len(self.get_flag_reward_insts("Futomimi",world)))
         ]
         f035_futomimi_callback_str = "FUTO_CB"
         f035_obj.appendProc(f035_futomimi_callback_insts,f035_futomimi_callback_labels,f035_futomimi_callback_str)
@@ -2694,6 +3223,124 @@ class Script_Modifier:
 
         if SCRIPT_DEBUG:
             self.script_debug_out(f035_obj,'f035.bf')
+
+        e672_obj = self.get_script_obj_by_name('e672') #Futomimi/Chiaki boss cutscene
+        
+        e672_main_proc = e672_obj.getProcIndexByLabel("e672_main")
+        e672_main_insts, e672_main_labels = e672_obj.getProcInstructionsLabelsByIndex(e672_main_proc)
+        e672_main_insts[24] = inst("PUSHIS",self.get_checks_boss_id("Futomimi",world)) #Model swaps
+        e672_main_insts[25] = inst("PUSHIS",0x6)
+        e672_main_insts[26] = inst("COMM",0x15)
+        e672_main_insts[34] = inst("PUSHIS",self.get_checks_boss_id("Archangels",world))
+        e672_main_insts[35] = inst("PUSHIS",0x6)
+        e672_main_insts[36] = inst("COMM",0x15)
+        e672_main_insts[39] = inst("PUSHIS",self.get_checks_boss_id("Archangels",world, index=1))
+        e672_main_insts[40] = inst("PUSHIS",0x6)
+        e672_main_insts[41] = inst("COMM",0x15)
+        e672_main_insts[44] = inst("PUSHIS",self.get_checks_boss_id("Archangels",world, index=2))
+        e672_main_insts[45] = inst("PUSHIS",0x6)
+        e672_main_insts[46] = inst("COMM",0x15)
+        e672_main_insts[208] = inst("PUSHIS",0x2) #Attempt to fix music playing in fight
+        e672_main_insts[211] = inst("PUSHIS",0x56) #Flag to open yurakucho
+        e672_main_insts[319] = inst("PUSHIS",0x0)
+        e672_main_insts[334] = inst("PUSHIS",0x2a0) #Play event again instead of baal transformation
+        e672_main_insts[338] = inst("GOTO",1) #label _4, fight archangels
+        e672_main_insts[350] = inst("PUSHIS",0x2a0)
+        e672_main_insert_insts_start = [ #Check if both battles are completed
+            inst("PUSHIS", 0x0),
+            inst("PUSHIS",0x55),
+            inst("COMM",0x7),
+            inst("PUSHREG"),
+            inst("EQ"),
+            inst("IF", 4) #label _6, end of the event
+        ]
+        e672_main_insert_insts = [ #Set position of futomimi
+            inst("PUSHSTR",294), #p02
+            inst("COMM",0x94),
+            inst("PUSHREG"),
+            inst("PUSHIX",0x2),
+            inst("COMM",0x4a),
+        ]
+        e672_main_insert_insts_2 = [
+            inst("PUSHIS",0x0),
+            inst("PUSHIS",0x81), #If fought futomimi, fight archangels next
+            inst("COMM",0x7),
+            inst("PUSHREG"),
+            inst("EQ"),
+            inst("IF",1)
+        ]
+        e672_main_insert_insts_3 = [
+            inst("PUSHIS",0x55), #Set flag so we know archangels are fought
+            inst("COMM",0x8),
+        ]
+        e672_main_insert_insts_4 = [ #Callback to the field instead of playing the baal transformation cutscene
+            inst("PUSHIS",0x2be),
+            inst("PUSHIS",0x23),
+            inst("PUSHIS",1),
+            inst("COMM",0x97),
+            inst("COMM",0x23),
+            inst("COMM",0x2e)
+        ]
+        insert_index = 49
+        insert_index_2 = 211
+        insert_index_3 = 343
+        insert_index_4 = 379
+        precut = 225
+        postcut = 322
+        diff = postcut - precut
+        for l in e672_main_labels:
+            l.label_offset += len(e672_main_insert_insts_start)
+            if l.label_offset > insert_index:
+                l.label_offset += len(e672_main_insert_insts)
+            if l.label_offset > insert_index_2:
+                l.label_offset += len(e672_main_insert_insts_2)
+            if l.label_offset > insert_index_3:
+                l.label_offset += len(e672_main_insert_insts_3)
+            if l.label_offset > precut:
+                l.label_offset-=diff
+                if l.label_offset < 1:
+                    l.label_offset = 1
+        e672_main_labels[1].label_offset += 2 #Label at the start of archangels fight
+        e672_main_insts = [e672_main_insts[0]] + e672_main_insert_insts_start + e672_main_insts[1:insert_index] + e672_main_insert_insts + e672_main_insts[insert_index:insert_index_2] + e672_main_insert_insts_2  + e672_main_insts[insert_index_2:precut] + e672_main_insts[postcut:insert_index_3] + e672_main_insert_insts_3 + e672_main_insts[insert_index_3:insert_index_4] + e672_main_insert_insts_4 + e672_main_insts[insert_index_4:]
+        e672_obj.changeProcByIndex(e672_main_insts, e672_main_labels, e672_main_proc)
+        
+        e672_100_proc = e672_obj.getProcIndexByLabel("e672_100") #Fix camera and futomimi animations
+        e672_100_insts, e672_100_labels = e672_obj.getProcInstructionsLabelsByIndex(e672_100_proc)
+        e672_100_insts[1] = inst("PUSHSTR", 133) #Camera 8
+        e672_100_insts[5] = inst("PUSHSTR", 145)
+        e672_100_insts[8] = inst("PUSHSTR", 139)
+        e672_100_insts[37] = inst("PUSHIS", 0x3)
+        e672_100_insts[40] = inst("PUSHIS", 0x1)
+        e672_100_insts[69] = inst("PUSHIS", 0x3)
+        e672_100_insts[72] = inst("PUSHIS", 0xf)
+        e672_100_insts = e672_100_insts[:75]  + e672_100_insts[89:] #Inteferes with animations
+        e672_obj.changeProcByIndex(e672_100_insts, e672_100_labels, e672_100_proc)
+        
+        e672_futomimi_rwms_index = e672_obj.appendMessage(self.get_reward_str("Futomimi",world),"FUTO_RWMS") #Chiaki "gives" reward, but real logic is in the callback
+        
+        e672_110_proc = e672_obj.getProcIndexByLabel("e672_110") #Give reward message instead of Chiaki's disappointment
+        e672_110_insts, e672_110_labels = e672_obj.getProcInstructionsLabelsByIndex(e672_110_proc)
+        e672_110_insts[68] = inst("PUSHIS", e672_futomimi_rwms_index)
+        e672_110_insert_insts = [
+            inst("PUSHIS", 0xf), #Fade in the screen
+            inst("PUSHIS", 0x0),
+            inst("COMM", 0xf),
+            inst("PUSHIS", 0xf),
+            inst("COMM", 0xe),
+            inst('PUSHIX', 0x2), #unload futomimi
+            inst("COMM", 0x6a)
+        ]
+        for l in e672_110_labels:
+            l.label_offset += len(e672_110_insert_insts)
+        e672_110_insts = [e672_110_insts[0]] + e672_110_insert_insts + e672_110_insts[1:]
+        e672_obj.changeProcByIndex(e672_110_insts, e672_110_labels, e672_110_proc)
+
+        e672_obj.changeNameByLookup("Futomimi", self.get_checks_boss_name("Futomimi",world, immersive=True))
+        
+        self.dds3.add_new_file(custom_vals.SCRIPT_OBJ_PATH['e672'],BytesIO(bytes(e672_obj.toBytes())))
+
+        if SCRIPT_DEBUG:
+            self.script_debug_out(e672_obj,'e672.bf')
 
         #Cutscene removal in Obelisk f031
         #Anything? Could probably do everything with flags.
@@ -2713,10 +3360,24 @@ class Script_Modifier:
         f031_sisters_insts[124] = inst("PUSHIS",self.get_checks_boss_id("Sisters",world, index=1))
         f031_obj.changeProcByIndex(f031_sisters_insts, f031_sisters_labels, f031_sisters_proc)
         f031_obj.changeMessageByIndex(assembler.message("> You sense ^r"+self.get_checks_boss_name("Sisters",world)+"^p^non the floor above.^n^x> Will you go up?" ,"BOSS_ROOM_IN"),0x32)        
-        f031_obj.changeNameByLookup("Clotho", self.get_checks_boss_name("Sisters",world, immersive=True))
+        f031_obj.changeNameByLookup("Clotho", self.get_checks_boss_name("Sisters",world, immersive=True, index=2))
         f031_obj.changeNameByLookup("Lachesis", self.get_checks_boss_name("Sisters",world, immersive=True))
-        f031_obj.changeNameByLookup("Atropos", self.get_checks_boss_name("Sisters",world, immersive=True))
+        f031_obj.changeNameByLookup("Atropos", self.get_checks_boss_name("Sisters",world, immersive=True, index=1))
         
+        if config_settings.shortest_cutscenes: #Remove boss cutscene
+            f031_boss_proc = f031_obj.getProcIndexByLabel("012_01eve_04") #Change sisters models to new boss and add hint message
+            f031_boss_insts, f031_boss_labels = f031_obj.getProcInstructionsLabelsByIndex(f031_boss_proc)
+            precut = 81
+            postcut = 170
+            diff = postcut - precut
+            for l in f031_boss_labels:
+                if l.label_offset > precut:
+                    l.label_offset -= diff
+            f031_boss_insts = f031_boss_insts[:precut] + f031_boss_insts[postcut:]
+            f031_obj.changeProcByIndex(f031_boss_insts, f031_boss_labels, f031_boss_proc)
+        
+        f031_obj.changeMessageByIndex(assembler.message("> Will you go to the Tower of^n^r"+self.get_checks_boss_name("Kagutsuchi",world)+"^p" ,"f031_GO_KAGUTUTI"),0x30)        
+
         f031_lb = self.push_bf_into_lb(f031_obj,'f031')
         self.dds3.add_new_file(custom_vals.LB0_PATH['f031'],f031_lb)
         #relevant story flags:
@@ -2725,6 +3386,27 @@ class Script_Modifier:
 
         if SCRIPT_DEBUG:
             self.script_debug_out(f031_obj,'f031.bf')
+
+        e651_obj = self.get_script_obj_by_name('e651') #Remove saving yuko in obelisk cutscene
+        e651_insts = [
+            inst("PROC",0),
+            inst("PUSHIS",0x10),
+            inst("PUSHIS",1),
+            inst("COMM",0xf),
+            inst("COMM",1),
+            inst("PUSHIS",0),
+            inst("COMM",0),
+            inst("COMM",2),
+            inst("COMM",0x23),#FLD_EVENT_END2
+            inst("COMM",0x2e),
+            inst("END")
+        ]
+        e651_obj.changeMessageByIndex(assembler.message("You have no business here." ,"MSG_030_1"), 0x0)
+        e651_obj.changeProcByIndex(e651_insts, [], 0)
+        self.dds3.add_new_file(custom_vals.SCRIPT_OBJ_PATH['e651'], BytesIO(bytes(e651_obj.toBytes())))
+
+        if SCRIPT_DEBUG:
+            self.script_debug_out(e651_obj,'e651.bf')
 
         #Cutscene removal in Amala Network 2 f028
         #Shorten Specter 2 and add reward message
@@ -2740,9 +3422,13 @@ class Script_Modifier:
         postcut = 163
         diff = postcut - precut
         #nothing to insert.
-        f028_011_insts = f028_011_insts[:precut] + f028_011_insts[postcut:]
-        #only one label.
-        f028_011_labels[0].label_offset -= diff
+        if config_settings.shortest_cutscenes:
+            f028_011_insts = f028_011_insts[:precut] + f028_011_insts[postcut:]
+            #only one label.
+            f028_011_labels[0].label_offset -= diff
+        else:
+            f028_011_insts[15] = inst("PUSHIS",self.get_checks_boss_id("Specter 2",world))
+            f028_obj.changeNameByLookup("Specter", self.get_checks_boss_name("Specter 2",world, immersive=True))
         f028_obj.changeProcByIndex(f028_011_insts, f028_011_labels, f028_011_index)
         f028_specter2_rwms_index = f028_obj.appendMessage(self.get_reward_str("Specter 2",world),"SPEC2_RWMS")
         f028_specter2_callback_insts = [
@@ -3079,7 +3765,58 @@ class Script_Modifier:
         e658_labels = [
             assembler.label("GARY_FOUGHT",13)
         ]
-        e658_obj.changeProcByIndex(e658_insts,e658_labels,0)
+        if not config_settings.longest_cutscenes:
+            e658_obj.changeProcByIndex(e658_insts,e658_labels,0)
+        else:
+            e658_main_proc = e658_obj.getProcIndexByLabel('e658_main')
+            e658_main_insts, e658_main_labels = e658_obj.getProcInstructionsLabelsByIndex(e658_main_proc)
+            e658_main_insts[27] = inst("PUSHIS",self.get_checks_boss_id("Girimehkala",world))
+            e658_main_insts[28] = inst("PUSHIS",0x6)
+            e658_main_insts[29] = inst("COMM",0x15)
+            e658_main_insts[203] = inst("PUSHIS",0x4a)
+            precut = 161
+            postcut = 175
+            precut2 = 185
+            postcut2 = 203
+            diff = postcut - precut
+            for l in e658_main_labels:
+                if l.label_offset > precut:
+                    l.label_offset -= diff
+            e658_main_insts = e658_main_insts[:precut] + e658_main_insts[postcut:precut2] + e658_main_insts[postcut2:]
+            e658_obj.changeNameByLookup("Sakahagi", self.get_checks_boss_name("Girimehkala",world, immersive=True))
+            e658_obj.changeProcByIndex(e658_main_insts,e658_main_labels,e658_main_proc)
+            
+            e658_10_proc = e658_obj.getProcIndexByLabel('e658_010')
+            e658_10_insts, e658_10_labels = e658_obj.getProcInstructionsLabelsByIndex(e658_10_proc)
+            e658_10_insert_insts = [
+                inst("PUSHSTR", 8),#p00
+                inst("COMM", 0x94),
+                inst("PUSHREG"),
+                inst("PUSHIX", 0x2),
+                inst("COMM", 0x4a), #Commands that use the model's integer index and are always run when loading
+                inst("PUSHIX", 0x2),
+                inst("COMM", 0x21e)
+            ]
+            e658_10_insts = e658_10_insts[0:20] + e658_10_insert_insts + e658_10_insts[20:]
+            e658_obj.changeProcByIndex(e658_10_insts,e658_10_labels,e658_10_proc)
+            
+            e658_20_proc = e658_obj.getProcIndexByLabel('e658_020')
+            e658_20_insts, e658_20_labels = e658_obj.getProcInstructionsLabelsByIndex(e658_20_proc)
+            e658_20_insts[31] = inst("PUSHIX",0x2)
+            e658_20_insts[44] = inst("PUSHIS",0x3)
+            e658_20_insts[47] = inst("PUSHIS",0xf)
+            e658_20_insts = [e658_20_insts[0]] + e658_20_insts[12:]
+            for l in e658_20_labels:
+                l.label_offset -= 11
+            e658_obj.changeProcByIndex(e658_20_insts,e658_20_labels,e658_20_proc)
+            
+            e658_30_proc = e658_obj.getProcIndexByLabel('e658_030')
+            e658_30_insts, e658_30_labels = e658_obj.getProcInstructionsLabelsByIndex(e658_30_proc)
+            e658_30_insts[26] = inst("PUSHIS",0x3)
+            e658_30_insts[29] = inst("PUSHIS",0x6)
+            e658_30_insts = [e658_30_insts[0]] + e658_30_insts[12:]
+            e658_obj.changeProcByIndex(e658_30_insts,e658_30_labels,e658_30_proc)
+            
         self.dds3.add_new_file(custom_vals.SCRIPT_OBJ_PATH['e658'],BytesIO(bytes(e658_obj.toBytes())))
 
         if SCRIPT_DEBUG:
@@ -3167,7 +3904,12 @@ class Script_Modifier:
                 assembler.label("HARLOT_FOUGHT",41),
                 assembler.label("HARLOT_RAN",38)
             ]
-        f016_obj.changeProcByIndex(f016_19_insts, f016_19_labels, f016_19_proc)
+        if not config_settings.longest_cutscenes:
+            f016_obj.changeProcByIndex(f016_19_insts, f016_19_labels, f016_19_proc)
+        else:
+            f016_19_insts, f016_19_labels = f016_obj.getProcInstructionsLabelsByIndex(f016_19_proc)
+            f016_19_insts[1] = inst("PUSHIS",0x3f5)
+            f016_obj.changeProcByIndex(f016_19_insts, f016_19_labels, f016_19_proc)
 
         f016_harlot_callback_str = "HARLOT_CB"
         f016_harlot_rwms_index = f016_obj.appendMessage(self.get_reward_str("The Harlot",world), "HARLOT_REWARD")
@@ -3192,6 +3934,25 @@ class Script_Modifier:
         f016_demon_message = assembler.message("I want a golden goblet!^n^xI hear you can find one^nat ^g"+self.get_flag_reward_location_string(0x3f5,world)+"^p.","F016_DEVIL03")
         f016_demon_message.name_id = f016_demon_name_id
         f016_obj.changeMessageByIndex(f016_demon_message,0x98)
+        
+        #Shorten first Pixie cutscene
+        f016_pixie_proc = f016_obj.getProcIndexByLabel('018_start')
+        f016_pixie_insts, f016_pixie_labels = f016_obj.getProcInstructionsLabelsByIndex(f016_pixie_proc)
+        f016_pixie_cutoff = 55 #55
+        f016_pixie_insert_insts = [
+            inst("PUSHIS",0x460),
+            inst("COMM",0x8),
+            inst("PUSHIS",0x46a),
+            inst("COMM",0x8),
+            inst("PUSHIS",0x1),
+            inst("COMM",0x151),
+            inst("END")
+        ]
+        f016_pixie_insts = f016_pixie_insts[:f016_pixie_cutoff] + f016_pixie_insert_insts
+        for l in f016_pixie_labels:
+            if l.label_offset > f016_pixie_cutoff:
+                l.label_offset = 1
+        f016_obj.changeProcByIndex(f016_pixie_insts, f016_pixie_labels, f016_pixie_proc)
 
         f016_lb = self.push_bf_into_lb(f016_obj,'f016')
         self.dds3.add_new_file(custom_vals.LB0_PATH['f016'],f016_lb)
@@ -3199,6 +3960,54 @@ class Script_Modifier:
 
         if SCRIPT_DEBUG:
             self.script_debug_out(f016_obj,'f016.bf')
+
+        #The Harlot fight cutscene model swap
+        e747_obj = self.get_script_obj_by_name('e747')
+        e747_10_proc = e747_obj.getProcIndexByLabel("e747_010")
+        e747_10_insts, e747_10_labels = e747_obj.getProcInstructionsLabelsByIndex(e747_10_proc)
+        e747_10_insts[83] = inst("PUSHIS",0x0) #Update animations
+        e747_10_insts[86] = inst("PUSHIS",0x0)
+        e747_10_insts[138] = inst("PUSHIS",0x4)
+        e747_10_insts[195] = inst("PUSHIS",0x3)
+        e747_10_insts[198] = inst("PUSHIS",0xe)
+        e747_10_insts[237] = inst("PUSHIS",0x2)
+        e747_10_insts[288] = inst("PUSHIS",0x2)
+        e747_10_insts[291] = inst("PUSHIS",0x10)
+        e747_10_insts[316] = inst("PUSHIS",0x2)
+        e747_10_insts[345] = inst("PUSHIS",0x5)
+        precut = 215
+        postcut = 226
+        precut2 = 272
+        postcut2 = 283
+        precut3 = 302
+        postcut3 = 313
+        precut4 = 331
+        postcut4 = 342
+        diff = postcut - precut
+        for l in e747_10_labels:
+            l.label_offset -= diff
+        e747_10_insts = e747_10_insts[:precut] + e747_10_insts[postcut:precut2] + e747_10_insts[postcut2:precut3] + e747_10_insts[postcut3:precut4] + e747_10_insts[postcut4:]
+        e747_obj.changeProcByIndex(e747_10_insts, e747_10_labels, e747_10_proc)
+
+        e747_main_proc = e747_obj.getProcIndexByLabel("e747_main")
+        e747_main_insts, e747_main_labels = e747_obj.getProcInstructionsLabelsByIndex(e747_main_proc)
+        e747_main_insts[54] = inst("PUSHIS",self.get_checks_boss_id("The Harlot",world))
+        e747_main_insts[55] = inst("PUSHIS",0x6)
+        e747_main_insts[56] = inst("COMM",0x15)
+        e747_main_insts[59] = inst("PUSHIS",self.get_checks_boss_id("The Harlot",world,index=2))
+        e747_main_insts[60] = inst("PUSHIS",0x6)
+        e747_main_insts[61] = inst("COMM",0x15)
+        if config_settings.menorah_groups: #Keep menorah flag and textbox if the vanilla flag is on
+            e747_main_insts = e747_main_insts[:188] + e747_main_insts[194:]
+        e747_obj.changeProcByIndex(e747_main_insts, e747_main_labels, e747_main_proc)
+
+        e747_mh_name_id = e747_obj.sections[3].messages[0x2].name_id
+        e747_mh_message = assembler.message("...and that's me--the "+self.get_checks_boss_name("The Harlot",world, immersive=True)+",^nsubjugator of the most fearsome^nbeast." ,"MSG_003")
+        e747_mh_message.name_id = e747_mh_name_id
+        e747_obj.changeMessageByIndex(e747_mh_message,0x2)
+        e747_obj.changeNameByLookup("Mother Harlot", self.get_checks_boss_name("The Harlot",world, immersive=True))
+        
+        self.dds3.add_new_file(custom_vals.SCRIPT_OBJ_PATH['e747'], BytesIO(bytes(e747_obj.toBytes())))
 
         #Cutscene removal in Amala Network 3 f030
         #Shorten the one thing - if even because it's tiny. Add reward message
@@ -3222,8 +4031,17 @@ class Script_Modifier:
         
         f030_specter_proc = f030_obj.getProcIndexByLabel("002_01eve_01") #Change specter model to new boss
         f030_specter_insts, f030_specter_labels = f030_obj.getProcInstructionsLabelsByIndex(f030_specter_proc)
-        f030_specter_insts[23] = inst("PUSHIS",self.get_checks_boss_id("Specter 3",world))
-        f030_specter_insts[129] = inst("PUSHIS",4) #Change crashing animation to "spell"
+        if config_settings.shortest_cutscenes:
+            precut = 7
+            postcut = 193
+            diff = postcut - precut
+            for l in f030_specter_labels:
+                if l.label_offset > precut:
+                    l.label_offset -= diff
+            f030_specter_insts = f030_specter_insts[:precut] + f030_specter_insts[postcut:]
+        else:
+            f030_specter_insts[23] = inst("PUSHIS",self.get_checks_boss_id("Specter 3",world))
+            f030_specter_insts[129] = inst("PUSHIS",4) #Change crashing animation to "spell"
         f030_obj.changeProcByIndex(f030_specter_insts, f030_specter_labels, f030_specter_proc)
         f030_obj.changeNameByLookup("Specter", self.get_checks_boss_name("Specter 3",world, immersive=True))
         
@@ -3453,19 +4271,46 @@ class Script_Modifier:
         
         f034_aciel_proc = f034_obj.getProcIndexByLabel("010_01eve_01") #Change aciel model to new boss
         f034_aciel_insts, f034_aciel_labels = f034_obj.getProcInstructionsLabelsByIndex(f034_aciel_proc)
-        f034_aciel_insts[55] = inst("PUSHIS",self.get_checks_boss_id("Aciel",world))
+        if config_settings.shortest_cutscenes:
+            precut = 7
+            postcut = 130
+            diff = postcut - precut
+            for l in f034_aciel_labels:
+                if l.label_offset > precut:
+                    l.label_offset -= diff
+            f034_aciel_insts = f034_aciel_insts[:precut] + f034_aciel_insts[postcut:]
+        else:
+            f034_aciel_insts[55] = inst("PUSHIS",self.get_checks_boss_id("Aciel",world))
         f034_obj.changeProcByIndex(f034_aciel_insts, f034_aciel_labels, f034_aciel_proc)
         f034_obj.changeNameByLookup("Aciel", self.get_checks_boss_name("Aciel",world, immersive=True))
         
         f034_skadi_proc = f034_obj.getProcIndexByLabel("018_01eve_01") #Change skadi model to new boss
         f034_skadi_insts, f034_skadi_labels = f034_obj.getProcInstructionsLabelsByIndex(f034_skadi_proc)
-        f034_skadi_insts[55] = inst("PUSHIS",self.get_checks_boss_id("Skadi",world))
+        if config_settings.shortest_cutscenes:
+            precut = 7
+            postcut = 109
+            diff = postcut - precut
+            for l in f034_skadi_labels:
+                if l.label_offset > precut:
+                    l.label_offset -= diff
+            f034_skadi_insts = f034_skadi_insts[:precut] + f034_skadi_insts[postcut:]
+        else:
+            f034_skadi_insts[55] = inst("PUSHIS",self.get_checks_boss_id("Skadi",world))
         f034_obj.changeProcByIndex(f034_skadi_insts, f034_skadi_labels, f034_skadi_proc)
         f034_obj.changeNameByLookup("Skadi", self.get_checks_boss_name("Skadi",world, immersive=True))
         
         f034_albion_proc = f034_obj.getProcIndexByLabel("025_01eve_01") #Change albion model to new boss
         f034_albion_insts, f034_albion_labels = f034_obj.getProcInstructionsLabelsByIndex(f034_albion_proc)
-        f034_albion_insts[57] = inst("PUSHIS",self.get_checks_boss_id("Albion",world))
+        if config_settings.shortest_cutscenes:
+            precut = 7
+            postcut = 126
+            diff = postcut - precut
+            for l in f034_albion_labels:
+                if l.label_offset > precut:
+                    l.label_offset -= diff
+            f034_albion_insts = f034_albion_insts[:precut] + f034_albion_insts[postcut:]
+        else:
+            f034_albion_insts[57] = inst("PUSHIS",self.get_checks_boss_id("Albion",world))
         f034_obj.changeProcByIndex(f034_albion_insts, f034_albion_labels, f034_albion_proc)
         f034_obj.changeNameByLookup("Albion", self.get_checks_boss_name("Albion",world, immersive=True))
 
@@ -3626,7 +4471,8 @@ class Script_Modifier:
                 assembler.label("TOOT_RAN",38),
                 assembler.label("TOOT_FOUGHT",35)
             ]
-        f021_obj.changeProcByIndex(f021_toot_insts,f021_toot_labels,f021_toot_proc)
+        if not config_settings.longest_cutscenes:
+            f021_obj.changeProcByIndex(f021_toot_insts,f021_toot_labels,f021_toot_proc)
 
         f021_toot_rwms = f021_obj.appendMessage(self.get_reward_str("Trumpeter",world),"TOOT_RWMS")
         f021_toot_rwms_insts = [
@@ -3645,17 +4491,42 @@ class Script_Modifier:
         self.insert_callback('f021', 0xf4, f021_toot_reward_proc_str)
 
         f021_obj.changeMessageByIndex(assembler.message("You sense the presence of^n^r"+self.get_checks_boss_name("Trumpeter",world)+"^p.","FIRE_YURE"),0x38)
-        #f021_obj.changeMessageByIndex(assembler.message("At the Northern Temple,^nyou can get back lost keys^nwith this Kimon Stone I found.^nCheck it out if one of your^ntemple keys failed to drop!^n^xIt's just a backup though.^nDon't use it to cheat.","SIGE_04"),0x14) If bishamon drops all 3 keys use this
-
+        
         f021_lb = self.push_bf_into_lb(f021_obj, 'f021')
         self.dds3.add_new_file(custom_vals.LB0_PATH['f021'], f021_lb)
 
-        #TODO
-        #Insert archangels in the same room that has "009_01eve_08"
-        #Plan: Move 009_01eve_08 over to the door, and have the normal door opening moved OoB. At that point we have BF control.
-
         if SCRIPT_DEBUG:
             self.script_debug_out(f021_obj,'f021.bf')
+            
+        #Trumpeter fight cutscene model swap
+        e748_obj = self.get_script_obj_by_name('e748')
+        e748_10_proc = e748_obj.getProcIndexByLabel("e748_010")
+        e748_10_insts, e748_10_labels = e748_obj.getProcInstructionsLabelsByIndex(e748_10_proc)
+        e748_10_insts[120] = inst("PUSHIS",0x0) #Update animations
+        e748_10_insts[123] = inst("PUSHIS",0x0)
+        e748_10_insts[156] = inst("PUSHIS",0x6)
+        e748_10_insts[305] = inst("PUSHIS",0x4)
+        e748_10_insts[336] = inst("PUSHIS",0x0)
+        e748_10_insts[376] = inst("PUSHIS",0x10)
+        e748_10_insts = e748_10_insts[:316] + e748_10_insts[331:347] + e748_10_insts[358:] #Fix camera
+        e748_obj.changeProcByIndex(e748_10_insts, e748_10_labels, e748_10_proc)
+
+        e748_main_proc = e748_obj.getProcIndexByLabel("e748_main")
+        e748_main_insts, e748_main_labels = e748_obj.getProcInstructionsLabelsByIndex(e748_main_proc)
+        e748_main_insts[54] = inst("PUSHIS",self.get_checks_boss_id("Trumpeter",world))
+        e748_main_insts[55] = inst("PUSHIS",0x6)
+        e748_main_insts[56] = inst("COMM",0x15)
+        if config_settings.menorah_groups: #Keep menorah flag and textbox if the vanilla flag is on
+            e748_main_insts = e748_main_insts[:185] + e748_main_insts[191:]
+        e748_obj.changeProcByIndex(e748_main_insts, e748_main_labels, e748_main_proc)
+
+        e748_doot_name_id = e748_obj.sections[3].messages[0x0].name_id
+        e748_doot_message = assembler.message("Little lamb that struggled through^ndarkness and clung to life,^nyou have done well until now.^x...I watched as you prevailed^nover many adversaries.^n^xI am the "+self.get_checks_boss_name("Trumpeter",world, immersive=True)+"...^nIt is I who will announce^nthe end of time." ,"MSG_003")
+        e748_doot_message.name_id = e748_doot_name_id
+        e748_obj.changeMessageByIndex(e748_doot_message,0x0)
+        e748_obj.changeNameByLookup("Trumpeter", self.get_checks_boss_name("Trumpeter",world, immersive=True))
+        
+        self.dds3.add_new_file(custom_vals.SCRIPT_OBJ_PATH['e748'], BytesIO(bytes(e748_obj.toBytes())))
 
         #Cutscene removal in Diet Building f033
         #Shorten Mada and Mithra. Add reward messages for all bosses.
@@ -3768,11 +4639,16 @@ class Script_Modifier:
         f033_29_labels = [
             assembler.label("MITHRA_FOUGHT",17)
         ]
-
-        f033_obj.changeProcByIndex(f033_29_insts, f033_29_labels, f033_29_proc)
+        if not config_settings.longest_cutscenes:
+            f033_obj.changeProcByIndex(f033_29_insts, f033_29_labels, f033_29_proc)
+        else:
+            f033_29_insts, f033_29_labels = f033_obj.getProcInstructionsLabelsByIndex(f033_29_proc)
+            f033_29_insts[30] = inst("PUSHIS",self.get_checks_boss_id("Mithra",world))
+            f033_obj.changeNameByLookup("Mithra", self.get_checks_boss_name("Mithra",world, immersive=True))
+            f033_obj.changeProcByIndex(f033_29_insts, f033_29_labels, f033_29_proc)
         f033_obj.changeMessageByIndex(assembler.message(self.get_reward_str("Mithra",world),"MITHRA_REWARD"),0x2d)
         
-        f033_29_start_proc = f033_obj.getProcIndexByLabel('029_start') #Mithra reward, DELETE if doesn't work right
+        f033_29_start_proc = f033_obj.getProcIndexByLabel('029_start') #Mithra reward
         f033_29_start_insts, f033_29_start_labels = f033_obj.getProcInstructionsLabelsByIndex(f033_29_start_proc)
         f033_29_start_insts = f033_29_start_insts[0:28] + self.get_flag_reward_insts("Mithra",world) + f033_29_start_insts[28:]
         f033_29_start_labels[0].label_offset = f033_29_start_labels[0].label_offset + len(self.get_flag_reward_insts("Mithra",world))
@@ -3828,7 +4704,43 @@ class Script_Modifier:
         e674_labels = [
             assembler.label("SAMAEL_DEFEATED",13)
         ]
-        e674_obj.changeProcByIndex(e674_insts,e674_labels,0)
+        if config_settings.shortest_cutscenes:
+            e674_obj.changeProcByIndex(e674_insts,e674_labels,0)
+        else: #Samael cutscene model swap
+            e674_main_proc = e674_obj.getProcIndexByLabel("e674_main")
+            e674_main_insts, e674_main_labels = e674_obj.getProcInstructionsLabelsByIndex(e674_main_proc)
+            e674_main_insts[13] = inst("PUSHIS",0x73)
+            e674_main_insts[159] = inst("PUSHIS",0x73) #Close door
+            precut = 86
+            postcut = 146
+            precut2 = 166
+            postcut2 = 240
+            diff = postcut - precut
+            diff2 = postcut2 - precut2
+            for l in e674_main_labels:
+                    if l.label_offset > precut:
+                        if l.label_offset > precut2:
+                            l.label_offset -= diff2
+                        l.label_offset-=diff
+                        if l.label_offset < 1:
+                            l.label_offset = 1
+            e674_main_insts = e674_main_insts[:precut] + e674_main_insts[postcut:precut2] + e674_main_insts[postcut2:]
+            e674_obj.changeProcByIndex(e674_main_insts, e674_main_labels, e674_main_proc)
+            
+            e674_10_proc = e674_obj.getProcIndexByLabel("e674_010")
+            e674_10_insts, e674_10_labels = e674_obj.getProcInstructionsLabelsByIndex(e674_10_proc)
+            e674_10_insts[116] = inst("PUSHIS",0xf) #Funnier quote
+            e674_obj.changeProcByIndex(e674_10_insts, e674_10_labels, e674_10_proc)
+
+            e674_100_proc = e674_obj.getProcIndexByLabel("e674_100")
+            e674_100_insts, e674_100_labels = e674_obj.getProcInstructionsLabelsByIndex(e674_100_proc)
+            e674_100_insts[52] = inst("PUSHIS",self.get_checks_boss_id("Samael",world)) #Load Samael Model
+            e674_100_insts[53] = inst("PUSHIS",0x6)
+            e674_100_insts[54] = inst("COMM",0x15)
+            e674_100_insts[57] = inst("PUSHSTR",37)
+            e674_100_insts[71] = inst("PUSHIS",0x8)
+            e674_obj.changeProcByIndex(e674_100_insts, e674_100_labels, e674_100_proc)
+
         self.dds3.add_new_file(custom_vals.SCRIPT_OBJ_PATH['e674'], BytesIO(bytes(e674_obj.toBytes())))
 
         if SCRIPT_DEBUG:
@@ -3851,9 +4763,7 @@ class Script_Modifier:
             inst("PUSHIS",0x74),
             inst("COMM",8),
             inst("PUSHIS",0x2a6),
-            inst("PUSHIS", 0x3e0), #Ahriman mysterious 2nd appearance
-            #inst("PUSHIS", 0x1c2), #Beelzebub
-            #inst("PUSHIS",0x14e),
+            inst("PUSHIS", 0x3e0),
             inst("COMM",0x28),
             inst("PUSHIS",0x3df),
             inst("COMM",8),
@@ -3865,13 +4775,83 @@ class Script_Modifier:
             inst("COMM",0x2e),
             inst("END")
         ]
-        if not config_settings.shijima: #Don't fight Ahriman in Shijima
-           e681_obj.changeProcByIndex(e681_insts,[],0)
-           self.dds3.add_new_file(custom_vals.SCRIPT_OBJ_PATH['e681'], BytesIO(bytes(e681_obj.toBytes())))
+        if config_settings.longest_cutscenes or config_settings.shijima: #Model swap for long cutscenes or shijima
+            if not config_settings.vanilla_tok:
+                e681_20_proc = e681_obj.getProcIndexByLabel("e681_020")
+                e681_20_insts, e681_20_labels = e681_obj.getProcInstructionsLabelsByIndex(e681_20_proc)
+                e681_20_insts[70] = inst("PUSHIS",0x0)
+                e681_obj.changeProcByIndex(e681_20_insts, e681_20_labels, e681_20_proc)
+                e681_30_proc = e681_obj.getProcIndexByLabel("e681_030")
+                e681_30_insts, e681_30_labels = e681_obj.getProcInstructionsLabelsByIndex(e681_30_proc)
+                e681_30_insts[79] = inst("PUSHIS",0x5)
+                e681_obj.changeProcByIndex(e681_30_insts, e681_30_labels, e681_30_proc)
+                e681_80_proc = e681_obj.getProcIndexByLabel("e681_080")
+                e681_80_insts, e681_80_labels = e681_obj.getProcInstructionsLabelsByIndex(e681_80_proc)
+                e681_80_insts[28] = inst("PUSHIS",0xe)
+                e681_obj.changeProcByIndex(e681_80_insts, e681_80_labels, e681_80_proc)
+                e681_main_proc = e681_obj.getProcIndexByLabel('e681_main')
+                e681_main_insts, e681_main_labels = e681_obj.getProcInstructionsLabelsByIndex(e681_main_proc)
+                e681_main_insts[24] = inst("PUSHIS",self.get_checks_boss_id("Ahriman",world))
+                e681_main_insts[25] = inst("PUSHIS",0x6)
+                e681_main_insts[26] = inst("COMM",0x15)
+                e681_main_insts[164] = inst("PUSHIS", 0x3e0)
+                e681_main_insert_insts = [
+                    inst("PUSHIS", 0x1),
+                    inst("PUSHIS", 0x2a9),
+                    inst("COMM", 0x90)
+                ]
+                insert_index = 158
+                for l in e681_main_labels:
+                    if l.label_offset > insert_index:
+                        l.label_offset += len(e681_main_insert_insts)
+                e681_main_insts = e681_main_insts[:insert_index] + e681_main_insert_insts + e681_main_insts[insert_index:]
+                e681_obj.changeProcByIndex(e681_main_insts, e681_main_labels, e681_main_proc)
+                e681_obj.changeNameByLookup("Ahriman", self.get_checks_boss_name("Ahriman",world, immersive=True))
+        else: #Remove cutscene
+            e681_obj.changeProcByIndex(e681_insts,[],0)
+        self.dds3.add_new_file(custom_vals.SCRIPT_OBJ_PATH['e681'], BytesIO(bytes(e681_obj.toBytes())))
         #Could probably blank out e678
 
         if SCRIPT_DEBUG:
             self.script_debug_out(e681_obj,'e681.bf')
+          
+        #Shorten Ahriman dead or change the model
+        e678_obj = self.get_script_obj_by_name('e678')
+        if config_settings.longest_cutscenes:
+            if not config_settings.vanilla_tok:
+                e678_main_proc = e678_obj.getProcIndexByLabel('e678_main')
+                e678_main_insts, e678_main_labels = e678_obj.getProcInstructionsLabelsByIndex(e678_main_proc)
+                e678_main_insts[24] = inst("PUSHIS",self.get_checks_boss_id("Ahriman",world))
+                e678_main_insts[25] = inst("PUSHIS",0x6)
+                e678_main_insts[26] = inst("COMM",0x15)
+                e678_main_insert_insts = [
+                    inst("PUSHIS",0x1),
+                    inst("PUSHIS",0xa),
+                    inst("PUSHIS",0x0),
+                    inst("PUSHIS",0x2),
+                    inst("PUSHIX",0x1),
+                    inst("COMM",0x73)
+                ]
+                e678_main_insts = e678_main_insts[:89] + e678_main_insert_insts + e678_main_insts[89:]
+                e678_obj.changeProcByIndex(e678_main_insts, e678_main_labels, e678_main_proc)
+                e678_obj.changeNameByLookup("Hikawa", self.get_checks_boss_name("Ahriman",world, immersive=True))
+        else:
+            e678_main_insts = [
+                inst("PROC",0),
+                inst("PUSHIS",0x3df),
+                inst("COMM",0x8),
+                inst("PUSHIS",0x74),
+                inst("COMM",0x8),
+                inst("COMM",0x23),
+                inst("COMM",0x2e),
+                inst("END")
+            ]
+            e678_obj.changeProcByIndex(e678_main_insts,[],0)
+        self.dds3.add_new_file(custom_vals.SCRIPT_OBJ_PATH['e678'], BytesIO(bytes(e678_obj.toBytes())))
+            
+        
+        if SCRIPT_DEBUG:
+            self.script_debug_out(e678_obj,'e678.bf')
 
         f032_obj = self.get_script_obj_by_name('f032')
         
@@ -3897,8 +4877,6 @@ class Script_Modifier:
             inst("COMM",8),
             inst("PUSHIS",0x2a5),
             inst("PUSHIS", 0x3e1), #Noah mysterious 2nd appearance
-            #inst("PUSHIS", 0x1c1), #Metatron
-            #inst("PUSHIS",0x1d8),
             inst("COMM",0x28),
             inst("PUSHIS",0x3e0),
             inst("COMM",8),
@@ -3911,11 +4889,66 @@ class Script_Modifier:
             inst("END")
         ]
         if not config_settings.musubi: #Don't fight Noah in Musubi
-            e680_obj.changeProcByIndex(e680_insts,[],0)
+            if config_settings.longest_cutscenes: #Model swap
+               if not config_settings.vanilla_tok:
+                   e680_10_proc = e680_obj.getProcIndexByLabel("e680_010")
+                   e680_10_insts, e680_10_labels = e680_obj.getProcInstructionsLabelsByIndex(e680_10_proc)
+                   e680_10_insts[40] = inst("PUSHIS",0x0)
+                   e680_obj.changeProcByIndex(e680_10_insts, e680_10_labels, e680_10_proc)
+                   e680_main_proc = e680_obj.getProcIndexByLabel('e680_main')
+                   e680_main_insts, e680_main_labels = e680_obj.getProcInstructionsLabelsByIndex(e680_main_proc)
+                   e680_main_insts[44] = inst("PUSHIS",self.get_checks_boss_id("Noah",world))
+                   e680_main_insts[45] = inst("PUSHIS",0x6)
+                   e680_main_insts[46] = inst("COMM",0x15)
+                   e680_main_insts[118] = inst("PUSHIS", 0x3e1)
+                   e680_main_insert_insts = [
+                       inst("PUSHIS", 0x1),
+                       inst("PUSHIS", 0x2a8),
+                       inst("COMM", 0x90)
+                   ]
+                   insert_index = 112
+                   for l in e680_main_labels:
+                       if l.label_offset > insert_index:
+                           l.label_offset += len(e680_main_insert_insts)
+                   e680_main_insts = e680_main_insts[:insert_index] + e680_main_insert_insts + e680_main_insts[insert_index:]
+                   e680_obj.changeProcByIndex(e680_main_insts, e680_main_labels, e680_main_proc)
+                   e680_obj.changeNameByIndex(self.get_checks_boss_name("Noah",world, immersive=True), 0)
+            else: #Remove cutscene
+               e680_obj.changeProcByIndex(e680_insts,[],0)
             self.dds3.add_new_file(custom_vals.SCRIPT_OBJ_PATH['e680'], BytesIO(bytes(e680_obj.toBytes())))
 
         if SCRIPT_DEBUG:
             self.script_debug_out(e680_obj,'e680.bf')
+            
+        e677_obj = self.get_script_obj_by_name('e677')
+        
+        #Noah dead model swap
+        if config_settings.longest_cutscenes:
+            if not config_settings.vanilla_tok:
+                e677_main_proc = e677_obj.getProcIndexByLabel('e677_main')
+                e677_main_insts, e677_main_labels = e677_obj.getProcInstructionsLabelsByIndex(e677_main_proc)
+                e677_main_insts[20] = inst("PUSHIS",self.get_checks_boss_id("Noah",world))
+                e677_main_insts[21] = inst("PUSHIS",0x6)
+                e677_main_insts[22] = inst("COMM",0x15)
+                e677_main_insts[59] = inst("PUSHIS",0x2)
+                e677_obj.changeProcByIndex(e677_main_insts, e677_main_labels, e677_main_proc)
+                e677_obj.changeNameByIndex(self.get_checks_boss_name("Noah",world, immersive=True), 0)
+        else:
+            e677_main_insts = [
+                inst("PROC",0),
+                inst("PUSHIS",0x3e0),
+                inst("COMM",0x8),
+                inst("PUSHIS",0x61),
+                inst("COMM",0x8),
+                inst("COMM",0x23),
+                inst("COMM",0x2e),
+                inst("END")
+            ]
+            e677_obj.changeProcByIndex(e677_main_insts,[],0)
+        self.dds3.add_new_file(custom_vals.SCRIPT_OBJ_PATH['e677'], BytesIO(bytes(e677_obj.toBytes())))
+
+        if SCRIPT_DEBUG:
+            self.script_debug_out(e677_obj,'e677.bf')
 
         #By setting 0x660, some stuff doesn't properly work. We'd like to keep 0x660 on, so we'll change the flag (using new flags, a30 and a31). This also allows direct ToK2 and ToK3 to work properly.
         #Change 012_start to use the 0xa30 flag and 013_start to be a duplicate (013 doesn't exist as a proc, but it's still referenced, and it's exactly where we want it).
@@ -3977,13 +5010,67 @@ class Script_Modifier:
             inst("COMM",0x2e),
             inst("END")
         ]
-        e682_obj.changeProcByIndex(e682_insts,[],0)
+        if config_settings.longest_cutscenes:
+            if not config_settings.vanilla_tok:
+                e682_30_proc = e682_obj.getProcIndexByLabel("e682_030")
+                e682_30_insts, e682_30_labels = e682_obj.getProcInstructionsLabelsByIndex(e682_30_proc)
+                e682_30_insts[12] = inst("PUSHIS",0x0)
+                e682_30_insts[15] = inst("PUSHIS",0x0)
+                e682_30_insts = e682_30_insts[:18] + e682_30_insts[29:]
+                e682_obj.changeProcByIndex(e682_30_insts, e682_30_labels, e682_30_proc)
+                e682_50_proc = e682_obj.getProcIndexByLabel("e682_050")
+                e682_50_insts, e682_50_labels = e682_obj.getProcInstructionsLabelsByIndex(e682_50_proc)
+                e682_50_insts[16] = inst("PUSHIS",0x3)
+                e682_50_insts[19] = inst("PUSHIS",0xe)
+                e682_50_insts[83] = inst("PUSHIS",0x3)
+                e682_50_insts[86] = inst("PUSHIS",0xb)
+                e682_50_insts[187] = inst("PUSHIS",0x3)
+                e682_50_insts[190] = inst("PUSHIS",0xb)
+                e682_obj.changeProcByIndex(e682_50_insts, e682_50_labels, e682_50_proc)
+                e682_main_proc = e682_obj.getProcIndexByLabel('e682_main')
+                e682_main_insts, e682_main_labels = e682_obj.getProcInstructionsLabelsByIndex(e682_main_proc)
+                e682_main_insts[12] = inst("PUSHIS",self.get_checks_boss_id("Baal Avatar",world))
+                e682_main_insts[13] = inst("PUSHIS",0x6)
+                e682_main_insts[14] = inst("COMM",0x15)
+                e682_obj.changeProcByIndex(e682_main_insts, e682_main_labels, e682_main_proc)
+                e682_obj.changeNameByIndex(self.get_checks_boss_name("Baal Avatar",world, immersive=True), 0)
+        else:
+            e682_obj.changeProcByIndex(e682_insts,[],0)
         self.dds3.add_new_file(custom_vals.SCRIPT_OBJ_PATH['e682'], BytesIO(bytes(e682_obj.toBytes())))
 
         if SCRIPT_DEBUG:
             self.script_debug_out(e682_obj,'e682.bf')
-            self.script_debug_out(self.get_script_obj_by_name('e718'),'e718.bf')
-            self.script_debug_out(self.get_script_obj_by_name('e719'),'e719.bf')
+            
+        e679_obj = self.get_script_obj_by_name('e679')
+        if config_settings.longest_cutscenes:
+            if not config_settings.vanilla_tok:
+                e679_main_proc = e679_obj.getProcIndexByLabel('e679_main')
+                e679_main_insts, e679_main_labels = e679_obj.getProcInstructionsLabelsByIndex(e679_main_proc)
+                e679_main_insts[20] = inst("PUSHIS",self.get_checks_boss_id("Baal Avatar",world))
+                e679_main_insts[21] = inst("PUSHIS",0x6)
+                e679_main_insts[22] = inst("COMM",0x15)
+                e679_obj.changeProcByIndex(e679_main_insts, e679_main_labels, e679_main_proc)
+                e679_10_proc = e679_obj.getProcIndexByLabel('e679_010')
+                e679_10_insts, e679_10_labels = e679_obj.getProcInstructionsLabelsByIndex(e679_10_proc)
+                e679_10_insts[15] = inst("PUSHIS",0x2)
+                e679_obj.changeProcByIndex(e679_10_insts, e679_10_labels, e679_10_proc)
+                e679_obj.changeNameByIndex(self.get_checks_boss_name("Baal Avatar",world, immersive=True), 0)
+        else:
+            e679_main_insts = [
+                inst("PROC",0),
+                inst("PUSHIS",0x3de),
+                inst("COMM",0x8),
+                inst("PUSHIS",0x84),
+                inst("COMM",0x8),
+                inst("COMM",0x23),
+                inst("COMM",0x2e),
+                inst("END")
+            ]
+            e679_obj.changeProcByIndex(e679_main_insts,[],0)
+        self.dds3.add_new_file(custom_vals.SCRIPT_OBJ_PATH['e679'], BytesIO(bytes(e679_obj.toBytes())))
+        
+        if SCRIPT_DEBUG:
+            self.script_debug_out(e679_obj,'e679.bf')
 
         f037_obj = self.get_script_obj_by_name('f037')
         #Same 0x660 problem as ToK2. Use 0xa31, a32, a33, a34 instead.
@@ -4024,11 +5111,32 @@ class Script_Modifier:
         f037_thorafter_proc = f037_obj.getProcIndexByLabel("007_THOR_AFTER") #Change Thor 2 model to new boss before and after fight
         f037_thorafter_insts, f037_thorafter_labels = f037_obj.getProcInstructionsLabelsByIndex(f037_thorafter_proc)
         f037_thorafter_insts[8] = inst("PUSHIS",self.get_checks_boss_id("Thor 2",world))
+        if not config_settings.longest_cutscenes:
+            precut = 4
+            postcut = 148
+            diff = postcut - precut
+            for l in f037_thorafter_labels:
+                if l.label_offset > precut:
+                    l.label_offset -= diff
+                    if l.label_offset < 1:
+                        l.label_offset = 1
+            f037_thorafter_insts = f037_thorafter_insts[:precut] + f037_thorafter_insts[postcut:]
         f037_obj.changeProcByIndex(f037_thorafter_insts, f037_thorafter_labels, f037_thorafter_proc)
         
-        if not config_settings.vanilla_tok:
-            f037_thor_proc = f037_obj.getProcIndexByLabel("007_01eve_05") #model is loaded differently here, beware of explosion
-            f037_thor_insts, f037_thor_labels = f037_obj.getProcInstructionsLabelsByIndex(f037_thor_proc)
+        f037_thor_proc = f037_obj.getProcIndexByLabel("007_01eve_05")
+        f037_thor_insts, f037_thor_labels = f037_obj.getProcInstructionsLabelsByIndex(f037_thor_proc)
+        if not config_settings.longest_cutscenes:
+            precut = 7
+            postcut = 154
+            diff = postcut - precut
+            for l in f037_thor_labels:
+                if l.label_offset > precut:
+                    l.label_offset -= diff
+                    if l.label_offset < 1:
+                        l.label_offset = 1
+            f037_thor_insts = f037_thor_insts[:precut] + f037_thor_insts[postcut:]
+            f037_obj.changeProcByIndex(f037_thor_insts, f037_thor_labels, f037_thor_proc)
+        elif not config_settings.vanilla_tok:
             f037_thor_insts[18] = inst("PUSHIS",self.get_checks_boss_id("Thor 2",world))
             f037_thor_insts[19] = inst("PUSHIS",6) #Same number as other model loads
             f037_obj.changeProcByIndex(f037_thor_insts, f037_thor_labels, f037_thor_proc)
@@ -4044,10 +5152,99 @@ class Script_Modifier:
             f037_dominion_message2 = assembler.message("If it isn't the Demi-fiend...^n^xI'm surprised you have the nerve to^neven see us!^n^xLady ^r"+self.get_checks_boss_name("Baal Avatar",world)+"^p^nis up ahead.^n^xYosuga shall take that stone^nyou have in your hands.^n...And your life." ,"F037_DEVIL03_02")
             f037_dominion_message2.name_id = f037_dominion_name_id
             f037_obj.changeMessageByIndex(f037_dominion_message2,0x4e)
+            f037_obj.changeMessageByIndex(assembler.message("> Will you go to ^r"+self.get_checks_boss_name("Kagutsuchi",world)+"^p?","SAIDAN_LAST"),0x20)
 
+        f037_27_proc = f037_obj.getProcIndexByLabel("027_start") #Auto-insert stones if you have all 3
+        f037_27_insts, f037_27_labels = f037_obj.getProcInstructionsLabelsByIndex(f037_27_proc)
+        f037_27_auto_stone_label_index = len(f037_27_labels)
+        f037_27_insert_insts_autostonecheck = [
+            inst("PUSHIS",0x66c), #stone 1 inserted or in inventory
+            inst("COMM",7),
+            inst("PUSHREG"),
+            inst("POPLIX",0x75),
+            inst("PUSHIS",0x3df),
+            inst("COMM",7),
+            inst("PUSHREG"),
+            inst("PUSHLIX",0x75),
+            inst("OR"),
+            inst("POPLIX",0x78),
+
+            inst("PUSHIS",0x66b), #stone 2 inserted or in inventory
+            inst("COMM",7),
+            inst("PUSHREG"),
+            inst("POPLIX",0x76),
+            inst("PUSHIS",0x3e0),
+            inst("COMM",7),
+            inst("PUSHREG"),
+            inst("PUSHLIX",0x76),
+            inst("OR"),
+            inst("POPLIX",0x79),
+
+            inst("PUSHIS",0x66d), #stone 3 inserted or in inventory
+            inst("COMM",7),
+            inst("PUSHREG"),
+            inst("POPLIX",0x77),
+            inst("PUSHIS",0x3de),
+            inst("COMM",7),
+            inst("PUSHREG"),
+            inst("PUSHLIX",0x77),
+            inst("OR"),
+            inst("POPLIX",0x7a),
+            
+            inst("PUSHIS",0x66e), #Haven't completed insertion yet
+            inst("COMM",7),
+            inst("PUSHREG"),
+            inst("PUSHIS",0),
+            inst("EQ"),
+            inst("POPLIX",0x7b),
+            inst("PUSHLIX",0x78),
+            inst("PUSHLIX",0x79),
+            inst("AND"),
+            inst("PUSHLIX",0x7a),
+            inst("AND"),
+            inst("PUSHLIX",0x7b),
+            inst("AND"),
+            inst("PUSHIS",0),
+            inst("EQ"),
+            inst("IF",f037_27_auto_stone_label_index)
+        ]
+        for l in f037_27_labels:
+            if l.label_offset > 57:
+                l.label_offset += len(f037_27_insert_insts_autostonecheck)
+        f037_27_auto_stone_label_offset = len(f037_27_insts) + len(f037_27_insert_insts_autostonecheck)
+        f037_27_labels.append(assembler.label("AUTO_INSERT_stone",f037_27_auto_stone_label_offset))
+        f037_obj.changeMessageByIndex(assembler.message("Stones automatically inserted.", "AUTO_stone"), 0x1f)
+        f037_27_04_proc = f037_obj.getProcIndexByLabel("027_01eve_04") #Auto-insert stones if you have all 3
+        f037_27_04_insts, f037_27_04_labels = f037_obj.getProcInstructionsLabelsByIndex(f037_27_04_proc)
+        f037_27_unlock_kagutsuchi_insts = f037_27_04_insts[233:281] #Code that unlocks the platform to kagutsuchi
+        f037_27_insert_insts_autostone_do = [
+            inst("COMM",0x60),
+            inst("PUSHIS",0x2),
+            inst("COMM",0xc3),
+            inst("PUSHIS",0x66b), #Remove all stones from inventory and set their inserted flags
+            inst("COMM",0x8),
+            inst("PUSHIS",0x66c),
+            inst("COMM",0x8),
+            inst("PUSHIS",0x66d),
+            inst("COMM",0x8),
+            inst("PUSHIS",0x3de),
+            inst("COMM",0x9),
+            inst("PUSHIS",0x3df),
+            inst("COMM",0x9),
+            inst("PUSHIS",0x3e0),
+            inst("COMM",0x9),
+        ] + f037_27_unlock_kagutsuchi_insts + [
+            inst("GOTO", f037_27_auto_stone_label_index - 1),
+            inst("END")
+        ] #Add goto end
+        
+        f037_27_labels[-2].label_offset += len(f037_27_insert_insts_autostone_do)#Fix former end label
+        f037_27_insts = f037_27_insts[:57] + f037_27_insert_insts_autostonecheck + f037_27_insts[57:] + f037_27_insert_insts_autostone_do
+        f037_obj.changeProcByIndex(f037_27_insts, f037_27_labels, f037_27_proc)
+            
         f037_lb = self.push_bf_into_lb(f037_obj, 'f037')
         self.dds3.add_new_file(custom_vals.LB0_PATH['f037'], f037_lb)
-
+        
         if SCRIPT_DEBUG:
             self.script_debug_out(f037_obj,'f037.bf')
            
@@ -4055,30 +5252,163 @@ class Script_Modifier:
         f038_zouchou_proc = f038_obj.getProcIndexByLabel("001_01eve_10") #Zoucho model swap
         f038_zouchou_insts, f038_zouchou_labels = f038_obj.getProcInstructionsLabelsByIndex(f038_zouchou_proc)
         f038_zouchou_insts[116] = inst("PUSHIS",self.get_checks_boss_id("Zouchou",world))
-        f038_obj.changeProcByIndex(f038_zouchou_insts, f038_zouchou_labels, f038_zouchou_proc)
         f038_jikoku_proc = f038_obj.getProcIndexByLabel("001_01eve_11") #Jikoku model swap
         f038_jikoku_insts, f038_jikoku_labels = f038_obj.getProcInstructionsLabelsByIndex(f038_jikoku_proc)
         f038_jikoku_insts[116] = inst("PUSHIS",self.get_checks_boss_id("Jikoku",world))
-        f038_obj.changeProcByIndex(f038_jikoku_insts, f038_jikoku_labels, f038_jikoku_proc)
         f038_koumoku_proc = f038_obj.getProcIndexByLabel("001_01eve_12") #Koumoku model swap
         f038_koumoku_insts, f038_koumoku_labels = f038_obj.getProcInstructionsLabelsByIndex(f038_koumoku_proc)
         f038_koumoku_insts[116] = inst("PUSHIS",self.get_checks_boss_id("Koumoku",world))
-        f038_obj.changeProcByIndex(f038_koumoku_insts, f038_koumoku_labels, f038_koumoku_proc)
         f038_bishamon_proc = f038_obj.getProcIndexByLabel("001_01eve_13") #Bishamon model swap
         f038_bishamon_insts, f038_bishamon_labels = f038_obj.getProcInstructionsLabelsByIndex(f038_bishamon_proc)
         f038_bishamon_insts[116] = inst("PUSHIS",self.get_checks_boss_id("Bishamon 2",world))
+
+        if config_settings.shortest_cutscenes: #Remove pillar lowering cutscenes
+            precut = 47
+            postcut = 210
+            diff = postcut - precut
+            f038_zouchou_insert_insts = [
+                inst("PUSHIS", 0x713),
+                inst("COMM", 0x8)
+            ]
+            f038_jikoku_insert_insts = [
+                inst("PUSHIS", 0x714),
+                inst("COMM", 0x8)
+            ]
+            f038_koumoku_insert_insts = [
+                inst("PUSHIS", 0x712),
+                inst("COMM", 0x8)
+            ]
+            f038_bishamon_insert_insts = [
+                inst("PUSHIS", 0x711),
+                inst("COMM", 0x8)
+            ]
+            for l in f038_zouchou_labels:
+                if l.label_offset > precut:
+                    l.label_offset -= (diff - len(f038_zouchou_insert_insts))
+            for l in f038_jikoku_labels:
+                if l.label_offset > precut:
+                    l.label_offset -= (diff - len(f038_jikoku_insert_insts))
+            for l in f038_bishamon_labels:
+                if l.label_offset > precut:
+                    l.label_offset -= (diff - len(f038_bishamon_insert_insts))
+            f038_zouchou_insts = f038_zouchou_insts[:precut] + f038_zouchou_insert_insts + f038_zouchou_insts[postcut:]
+            f038_jikoku_insts = f038_jikoku_insts[:precut] + f038_jikoku_insert_insts + f038_jikoku_insts[postcut:]
+            f038_bishamon_insts = f038_bishamon_insts[:precut] + f038_bishamon_insert_insts + f038_bishamon_insts[postcut:]
+            postcut = 215 #Koumoku's cutscene is slightly different
+            diff = postcut - precut
+            for l in f038_koumoku_labels:
+                if l.label_offset > precut:
+                    l.label_offset -= (diff - len(f038_koumoku_insert_insts))
+            f038_koumoku_insts = f038_koumoku_insts[:precut] + f038_koumoku_insert_insts + f038_koumoku_insts[postcut:]
+            
+        f038_obj.changeProcByIndex(f038_zouchou_insts, f038_zouchou_labels, f038_zouchou_proc)
+        f038_obj.changeProcByIndex(f038_jikoku_insts, f038_jikoku_labels, f038_jikoku_proc)
         f038_obj.changeProcByIndex(f038_bishamon_insts, f038_bishamon_labels, f038_bishamon_proc)
+        f038_obj.changeProcByIndex(f038_koumoku_insts, f038_koumoku_labels, f038_koumoku_proc)
         
         f038_obj.changeNameByLookup("Zouchou", self.get_checks_boss_name("Zouchou",world, immersive=True))
         f038_obj.changeNameByLookup("Jikoku", self.get_checks_boss_name("Jikoku",world, immersive=True))
         f038_obj.changeNameByLookup("Koumoku", self.get_checks_boss_name("Koumoku",world, immersive=True))
         f038_obj.changeNameByLookup("Bishamon", self.get_checks_boss_name("Bishamon 2",world, immersive=True))
         
+        #Shorten masakados
+        f038_masakados_proc = f038_obj.getProcIndexByLabel("002_start")
+        f038_masakados_insts, f038_masakados_labels = f038_obj.getProcInstructionsLabelsByIndex(f038_masakados_proc)
+        f038_masakados_insts[214] = inst("PUSHIS", 0x1b)
+        precut = 7
+        postcut = 214
+        diff = postcut - precut
+        f038_masakados_insert_insts = [
+            inst("COMM", 0x60),
+            inst("PUSHIS", 0x0),
+            inst("COMM", 0xc3),
+            inst("PUSHIS", 0x1e),
+            inst("PUSHIS", 0x1),
+            inst("COMM", 0xf),
+            inst("PUSHIS", 0x1e),
+            inst("COMM", 0xe),
+            inst("COMM", 0x1)
+        ]
+        for l in f038_masakados_labels:
+            if l.label_offset > precut:
+                l.label_offset -= (diff - len(f038_masakados_insert_insts))
+                if l.label_offset < 1:
+                    l.label_offset = 1
+        f038_masakados_insts = f038_masakados_insts[:precut] + f038_masakados_insert_insts + f038_masakados_insts[postcut:]
+        f038_obj.changeProcByIndex(f038_masakados_insts, f038_masakados_labels, f038_masakados_proc)
+        
         f038_lb = self.push_bf_into_lb(f038_obj, 'f038')
         self.dds3.add_new_file(custom_vals.LB0_PATH['f038'], f038_lb)
 
         if SCRIPT_DEBUG:
             self.script_debug_out(f038_obj,'f038.bf')
+
+        #Replace Kagutsuchi model with new boss
+        e705_obj = self.get_script_obj_by_name('e705')
+        e705_main_proc = e705_obj.getProcIndexByLabel('e705_main')
+        e705_main_insts, e705_main_labels = e705_obj.getProcInstructionsLabelsByIndex(e705_main_proc)
+        if not config_settings.vanilla_tok:
+            e705_main_insts[35] = inst("PUSHIS",self.get_checks_boss_id("Kagutsuchi",world))
+            e705_main_insts[36] = inst("PUSHIS",0x6)
+            e705_main_insts[37] = inst("COMM",0x15)
+            e705_main_insts[45] = inst("PUSHIS",self.get_checks_boss_id("Kagutsuchi",world))
+            e705_main_insts[46] = inst("PUSHIS",0x6)
+            e705_main_insts[47] = inst("COMM",0x15)
+            e705_obj.changeNameByLookup("Voice", self.get_checks_boss_name("Kagutsuchi",world, immersive=True))
+            e705_obj.changeNameByLookup("Kagutsuchi", self.get_checks_boss_name("Kagutsuchi",world, immersive=True))
+        precut = 13 #Remove prerendered scenes
+        postcut = 32
+        diff = postcut - precut
+        for l in e705_main_labels:
+            if l.label_offset > precut:
+                l.label_offset -= diff
+        e705_main_insts = e705_main_insts[:precut] + e705_main_insts[postcut:]
+        e705_obj.changeProcByIndex(e705_main_insts, e705_main_labels, e705_main_proc)
+        
+        e705_10_proc = e705_obj.getProcIndexByLabel('e705_010')
+        e705_10_insts, e705_10_labels = e705_obj.getProcInstructionsLabelsByIndex(e705_10_proc)
+        e705_10_insert_insts = [
+            inst("PUSHIS", 0x1),
+            inst("PUSHIS", 0x266),
+            inst("COMM", 0x90)
+        ]
+        precut = 1426
+        postcut = 1506
+        diff = postcut - precut
+        for l in e705_10_labels:
+            if l.label_offset > precut:
+                l.label_offset -= diff
+                l.label_offset += len(e705_10_insert_insts)
+                if l.label_offset < 1:
+                    l.label_offset = 1
+        e705_10_insts = e705_10_insts[:precut] + e705_10_insert_insts + e705_10_insts[postcut:]
+        e705_obj.changeProcByIndex(e705_10_insts, e705_10_labels, e705_10_proc)
+            
+        self.dds3.add_new_file(custom_vals.SCRIPT_OBJ_PATH['e705'], BytesIO(bytes(e705_obj.toBytes())))
+            
+        if SCRIPT_DEBUG:
+            self.script_debug_out(e705_obj,'e705.bf')
+
+        e726_obj = self.get_script_obj_by_name('e726')
+        
+        e726_main_proc = e726_obj.getProcIndexByLabel('e726_main') #Shorten lucy
+        e726_main_insts, e726_main_labels = e726_obj.getProcInstructionsLabelsByIndex(e726_main_proc)
+        precut = 11
+        postcut = 256 #260 works fine
+        diff = postcut - precut
+        for l in e726_main_labels:
+            if l.label_offset > precut:
+                l.label_offset -= diff
+                if l.label_offset < 1:
+                    l.label_offset = 1
+        e726_main_insts = e726_main_insts[:precut] + e726_main_insts[postcut:]
+        e726_obj.changeProcByIndex(e726_main_insts, e726_main_labels, e726_main_proc)
+
+            
+        self.dds3.add_new_file(custom_vals.SCRIPT_OBJ_PATH['e726'], BytesIO(bytes(e726_obj.toBytes())))
+        
+        if SCRIPT_DEBUG:
+            self.script_debug_out(e726_obj,'e726.bf')
         
         #LoA Kalpa Tunnel Skips
         f040_obj = self.get_script_obj_by_name('f040')
@@ -4162,6 +5492,17 @@ class Script_Modifier:
                 l.label_offset += 4
         f040_obj.changeProcByIndex(f040_kalpa5_tunnel_insts, f040_kalpa5_tunnel_labels, f040_kalpa5_tunnel_proc)
         
+        f040_door_proc = f040_obj.getProcIndexByLabel("001_door")
+        f040_door_insts, f040_door_labels = f040_obj.getProcInstructionsLabelsByIndex(f040_door_proc)
+        precut = 47
+        postcut = 71
+        diff = postcut-precut
+        for l in f040_door_labels:
+            if l.label_offset > precut:
+                l.label_offset -= diff
+        f040_door_insts = f040_door_insts[:precut] + f040_door_insts[postcut:]
+        f040_obj.changeProcByIndex(f040_door_insts, f040_door_labels, f040_door_proc)
+        
         f040_lb = self.push_bf_into_lb(f040_obj, 'f040')
         self.dds3.add_new_file(custom_vals.LB0_PATH['f040'], f040_lb)
         
@@ -4198,6 +5539,61 @@ class Script_Modifier:
             if l.label_offset > 60:
                 l.label_offset += 4
         f041_obj.changeProcByIndex(f041_lobby_tunnel_insts, f041_lobby_tunnel_labels, f041_lobby_tunnel_proc)
+        
+        f041_door_proc = f041_obj.getProcIndexByLabel("002_door")
+        f041_door_insts, f041_door_labels = f041_obj.getProcInstructionsLabelsByIndex(f041_door_proc)
+        precut = 42
+        postcut = 66
+        diff = postcut-precut
+        for l in f041_door_labels:
+            if l.label_offset > precut:
+                l.label_offset -= diff
+        f041_door_insts = f041_door_insts[:precut] + f041_door_insts[postcut:]
+        f041_obj.changeProcByIndex(f041_door_insts, f041_door_labels, f041_door_proc)
+        
+        f041_switch_proc = f041_obj.getProcIndexByLabel("011_01eve_01")
+        f041_switch_insts, f041_switch_labels = f041_obj.getProcInstructionsLabelsByIndex(f041_switch_proc)
+        precut = 108
+        postcut = 137
+        diff = postcut-precut
+        for l in f041_switch_labels:
+            if l.label_offset > precut:
+                l.label_offset -= diff
+        f041_switch_insts = f041_switch_insts[:precut] + f041_switch_insts[postcut:]
+        f041_obj.changeProcByIndex(f041_switch_insts, f041_switch_labels, f041_switch_proc)
+        
+        f041_menorah_proc = f041_obj.getProcIndexByLabel("001_01eve_01") #Shorten placing menorah
+        f041_menorah_insts, f041_menorah_labels = f041_obj.getProcInstructionsLabelsByIndex(f041_menorah_proc)
+        f041_menorah_insts[141] = inst("PUSHIS",0xa)
+        f041_menorah_insts[147] = inst("PUSHIS",0xa)
+        f041_menorah_insts[206] = inst("PUSHIS",0xa)
+        f041_menorah_insts[211] = inst("PUSHIS",0xa)
+        f041_menorah_insts[257] = inst("PUSHIS",0xa)
+        f041_menorah_insts[264] = inst("PUSHIS",0xa)
+        f041_menorah_insts[269] = inst("PUSHIS",0xa)
+        precut = 100
+        postcut = 118
+        precut2 = 157
+        postcut2 = 161
+        precut3 = 173
+        postcut3 = 179
+        precut4 = 224
+        postcut4 = 235
+        diff = postcut-precut
+        diff2 = postcut2-precut2
+        diff3 = postcut3-precut3
+        diff4 = postcut4-precut4
+        for l in f041_menorah_labels:
+            if l.label_offset > precut:
+                l.label_offset -= diff
+                if l.label_offset > precut2:
+                    l.label_offset -= diff2
+                    if l.label_offset > precut3:
+                        l.label_offset -= diff3
+                        if l.label_offset > precut4:
+                            l.label_offset -= diff4
+        f041_menorah_insts = f041_menorah_insts[:precut] + f041_menorah_insts[postcut:precut2] + f041_menorah_insts[postcut2:precut3] + f041_menorah_insts[postcut3:precut4] + f041_menorah_insts[postcut4:]
+        f041_obj.changeProcByIndex(f041_menorah_insts, f041_menorah_labels, f041_menorah_proc)
 
         f041_lb = self.push_bf_into_lb(f041_obj, 'f041')
         self.dds3.add_new_file(custom_vals.LB0_PATH['f041'], f041_lb)
@@ -4261,6 +5657,57 @@ class Script_Modifier:
         if config_settings.menorah_groups: #Menorah hint
             f042_obj.changeMessageByIndex(assembler.message("> Retrieve these candelabra^nfrom ^g"+self.get_flag_reward_location_string(0x3e7,world)+"^p.", "MSG_001_2"),0x6)
             
+        f042_door_proc = f042_obj.getProcIndexByLabel("002_door")
+        f042_door_insts, f042_door_labels = f042_obj.getProcInstructionsLabelsByIndex(f042_door_proc)
+        precut = 42
+        postcut = 66
+        diff = postcut-precut
+        for l in f042_door_labels:
+            if l.label_offset > precut:
+                l.label_offset -= diff
+        f042_door_insts = f042_door_insts[:precut] + f042_door_insts[postcut:]
+        f042_obj.changeProcByIndex(f042_door_insts, f042_door_labels, f042_door_proc)
+        
+        f042_menorah_proc = f042_obj.getProcIndexByLabel("001_01eve_01") #Shorten placing menorahs
+        f042_menorah_insts, f042_menorah_labels = f042_obj.getProcInstructionsLabelsByIndex(f042_menorah_proc)
+        f042_menorah_insts[105] = inst("PUSHIS",0xa)
+        f042_menorah_insts[211] = inst("PUSHIS",0xa)
+        f042_menorah_insts[203] = inst("PUSHIS",0xa)
+        f042_menorah_insts[209] = inst("PUSHIS",0xa)
+        f042_menorah_insts[303] = inst("PUSHIS",0xa)
+        f042_menorah_insts[308] = inst("PUSHIS",0xa)
+        f042_menorah_insts[340] = inst("PUSHIS",0xa)
+        f042_menorah_insts[352] = inst("PUSHIS",0xa)
+        f042_menorah_insts[364] = inst("PUSHIS",0xa)
+        precut = 37
+        postcut = 44
+        precut2 = 70
+        postcut2 = 82
+        precut3 = 168
+        postcut3 = 180
+        precut4 = 272
+        postcut4 = 278
+        precut5 = 319
+        postcut5 = 330
+        diff = postcut-precut
+        diff2 = postcut2 - precut2
+        diff3 = postcut3 - precut3
+        diff4 = postcut4 - precut4
+        diff5 = postcut5 - precut5
+        for l in f042_menorah_labels:
+            if l.label_offset > precut:
+                l.label_offset -= diff
+                if l.label_offset > precut2:
+                    l.label_offset -= diff2
+                    if l.label_offset > precut3:
+                        l.label_offset -= diff3
+                        if l.label_offset > precut4:
+                            l.label_offset -= diff4
+                            if l.label_offset > precut5:
+                                l.label_offset -= diff5
+        f042_menorah_insts = f042_menorah_insts[:precut] + f042_menorah_insts[postcut:precut2] + f042_menorah_insts[postcut2:precut3] + f042_menorah_insts[postcut3:precut4] + f042_menorah_insts[postcut4:precut5] + f042_menorah_insts[postcut5:]
+        f042_obj.changeProcByIndex(f042_menorah_insts, f042_menorah_labels, f042_menorah_proc)
+
         f042_lb = self.push_bf_into_lb(f042_obj, 'f042')
         self.dds3.add_new_file(custom_vals.LB0_PATH['f042'], f042_lb)
         
@@ -4340,31 +5787,53 @@ class Script_Modifier:
         e729_obj = self.get_script_obj_by_name('e729')
         e729_main_proc = e729_obj.getProcIndexByLabel("e729_main")
         e729_main_insts, e729_main_labels = e729_obj.getProcInstructionsLabelsByIndex(e729_main_proc)
-        e729_main_insts = [e729_main_insts[0]] + [
-            inst("PUSHIS",0),
-            inst("PUSHIS",0x105),
-            inst("COMM",7),
-            inst("PUSHREG"),
-            inst("EQ"),
-            inst("IF",0),
-            inst("PUSHIS",0x105),
-            inst("COMM",0x8),
-            inst("PUSHIS",0x2d9),
-            inst("PUSHIS",0x40b),
-            inst("COMM",0x28),
-            inst("END"),
-            inst("PUSHIS",0x2d9),
-            inst("PUSHIS",0x2b),
-            inst("PUSHIS",0x1),
-            inst("COMM",0x97),
-            inst("COMM",0x23),
-            inst("COMM",0x2e),
-            inst("END")
-        ]
-        e729_main_labels = [
-            assembler.label("DANTE_FOUGHT",13)
-        ]
-        e729_obj.changeProcByIndex(e729_main_insts, e729_main_labels, e729_main_proc)
+        if not config_settings.longest_cutscenes: #Skip cutscene
+            e729_main_insts = [e729_main_insts[0]] + [
+                inst("PUSHIS",0),
+                inst("PUSHIS",0x105),
+                inst("COMM",7),
+                inst("PUSHREG"),
+                inst("EQ"),
+                inst("IF",0),
+                inst("PUSHIS",0x105),
+                inst("COMM",0x8),
+                inst("PUSHIS",0x2d9),
+                inst("PUSHIS",0x40b),
+                inst("COMM",0x28),
+                inst("END"),
+                inst("PUSHIS",0x2d9),
+                inst("PUSHIS",0x2b),
+                inst("PUSHIS",0x1),
+                inst("COMM",0x97),
+                inst("COMM",0x23),
+                inst("COMM",0x2e),
+                inst("END")
+            ]
+            e729_main_labels = [
+                assembler.label("DANTE_FOUGHT",13)
+            ]
+            e729_obj.changeProcByIndex(e729_main_insts, e729_main_labels, e729_main_proc)
+        else: #Dante 2 model swap
+            e729_20_proc = e729_obj.getProcIndexByLabel("e729_020")
+            e729_20_insts, e729_20_labels = e729_obj.getProcInstructionsLabelsByIndex(e729_20_proc)
+            e729_20_insts[1] = inst("PUSHIS",self.get_checks_boss_id("Dante 2",world))
+            e729_20_insts[2] = inst("PUSHIS",0x6)
+            e729_20_insts[3] = inst("COMM",0x15)
+            e729_obj.changeProcByIndex(e729_20_insts, e729_20_labels, e729_20_proc)
+            e729_30_proc = e729_obj.getProcIndexByLabel("e729_030")
+            e729_30_insts, e729_30_labels = e729_obj.getProcInstructionsLabelsByIndex(e729_30_proc)
+            e729_30_insts[34] = inst("PUSHIS",0x0)
+            e729_30_insts[65] = inst("PUSHIS",0x7)
+            e729_obj.changeProcByIndex(e729_30_insts, e729_30_labels, e729_30_proc)
+            e729_main_insts[7] = inst("PUSHIS",0x2d9)
+            e729_main_insts[8] = inst("PUSHIS",0x2b)
+            e729_main_insts[9] = inst("PUSHIS",0x1)
+            e729_main_insts[10] = inst("COMM",0x97)
+            e729_main_insts[11] = inst("COMM",0x23)
+            e729_main_insts[12] = inst("COMM",0x2e)
+            e729_main_insts[13] = inst("END")
+            e729_obj.changeProcByIndex(e729_main_insts, e729_main_labels, e729_main_proc)
+            e729_obj.changeNameByLookup("Dante", self.get_checks_boss_name("Dante 2",world, immersive=True))
         self.dds3.add_new_file(custom_vals.SCRIPT_OBJ_PATH['e729'], BytesIO(bytes(e729_obj.toBytes())))
         
         
@@ -4462,6 +5931,128 @@ class Script_Modifier:
         if config_settings.menorah_groups: #Menorah hint
             f043_obj.changeMessageByIndex(assembler.message("> Retrieve these candelabra^nfrom ^g"+self.get_flag_reward_location_string(0x3e4,world)+"^p.", "MSG_001_2"),0xc)
         
+        f043_dante_trio_1_proc = f043_obj.getProcIndexByLabel("007_01eve_01") #Activate all 3 switches at once
+        f043_dante_trio_1_insts, f043_dante_trio_1_labels = f043_obj.getProcInstructionsLabelsByIndex(f043_dante_trio_1_proc)
+        f043_dante_trio_1_insert_insts = [
+            inst("PUSHIS",0x7b4),
+            inst("COMM",0x8),
+            inst("PUSHIS",0x7b5),
+            inst("COMM",0x8)
+        ]
+        for l in f043_dante_trio_1_labels:
+            if l.label_offset >= 112:
+                l.label_offset += 4
+        f043_dante_trio_1_insts = f043_dante_trio_1_insts[:112] + f043_dante_trio_1_insert_insts + f043_dante_trio_1_insts[112:]
+        f043_obj.changeProcByIndex(f043_dante_trio_1_insts, f043_dante_trio_1_labels, f043_dante_trio_1_proc)
+        
+        f043_dante_trio_2_proc = f043_obj.getProcIndexByLabel("007_01eve_02") #Activate all 3 switches at once
+        f043_dante_trio_2_insts, f043_dante_trio_2_labels = f043_obj.getProcInstructionsLabelsByIndex(f043_dante_trio_2_proc)
+        f043_dante_trio_2_insert_insts = [
+            inst("PUSHIS",0x7b3),
+            inst("COMM",0x8),
+            inst("PUSHIS",0x7b5),
+            inst("COMM",0x8)
+        ]
+        for l in f043_dante_trio_2_labels:
+            if l.label_offset >= 112:
+                l.label_offset += 4
+        f043_dante_trio_2_insts = f043_dante_trio_2_insts[:112] + f043_dante_trio_2_insert_insts + f043_dante_trio_2_insts[112:]
+        f043_obj.changeProcByIndex(f043_dante_trio_2_insts, f043_dante_trio_2_labels, f043_dante_trio_2_proc)
+        
+        f043_dante_trio_3_proc = f043_obj.getProcIndexByLabel("007_01eve_03") #Activate all 3 switches at once
+        f043_dante_trio_3_insts, f043_dante_trio_3_labels = f043_obj.getProcInstructionsLabelsByIndex(f043_dante_trio_3_proc)
+        f043_dante_trio_3_insert_insts = [
+            inst("PUSHIS",0x7b3),
+            inst("COMM",0x8),
+            inst("PUSHIS",0x7b4),
+            inst("COMM",0x8)
+        ]
+        for l in f043_dante_trio_3_labels:
+            if l.label_offset >= 112:
+                l.label_offset += 4
+        f043_dante_trio_3_insts = f043_dante_trio_3_insts[:112] + f043_dante_trio_3_insert_insts + f043_dante_trio_3_insts[112:]
+        f043_obj.changeProcByIndex(f043_dante_trio_3_insts, f043_dante_trio_3_labels, f043_dante_trio_3_proc)
+
+        f043_door_proc = f043_obj.getProcIndexByLabel("002_door") #Shorten door opening
+        f043_door_insts, f043_door_labels = f043_obj.getProcInstructionsLabelsByIndex(f043_door_proc)
+        precut = 42
+        postcut = 66
+        diff = postcut-precut
+        for l in f043_door_labels:
+            if l.label_offset > precut:
+                l.label_offset -= diff
+        f043_door_insts = f043_door_insts[:precut] + f043_door_insts[postcut:]
+        f043_obj.changeProcByIndex(f043_door_insts, f043_door_labels, f043_door_proc)
+        
+        f043_dante_door_1_proc = f043_obj.getProcIndexByLabel("005_door_open") #Shorten door opening
+        f043_dante_door_1_insts, f043_dante_door_1_labels = f043_obj.getProcInstructionsLabelsByIndex(f043_dante_door_1_proc)
+        precut = 22
+        postcut = 35
+        diff = postcut-precut
+        for l in f043_dante_door_1_labels:
+            if l.label_offset > precut:
+                l.label_offset -= diff
+        f043_dante_door_1_insts = f043_dante_door_1_insts[:precut] + f043_dante_door_1_insts[postcut:]
+        f043_obj.changeProcByIndex(f043_dante_door_1_insts, f043_dante_door_1_labels, f043_dante_door_1_proc)
+        
+        f043_dante_door_2_proc = f043_obj.getProcIndexByLabel("007_door_open") #Shorten door opening
+        f043_dante_door_2_insts, f043_dante_door_2_labels = f043_obj.getProcInstructionsLabelsByIndex(f043_dante_door_2_proc)
+        precut = 22
+        postcut = 35
+        diff = postcut-precut
+        for l in f043_dante_door_2_labels:
+            if l.label_offset > precut:
+                l.label_offset -= diff
+        f043_dante_door_2_insts = f043_dante_door_2_insts[:precut] + f043_dante_door_2_insts[postcut:]
+        f043_obj.changeProcByIndex(f043_dante_door_2_insts, f043_dante_door_2_labels, f043_dante_door_2_proc)
+
+        f043_menorah_proc = f043_obj.getProcIndexByLabel("001_01eve_01") #Shorten placing menorahs
+        f043_menorah_insts, f043_menorah_labels = f043_obj.getProcInstructionsLabelsByIndex(f043_menorah_proc)
+        f043_menorah_insts[111] = inst("PUSHIS",0xa)
+        f043_menorah_insts[117] = inst("PUSHIS",0xa)
+        f043_menorah_insts[213] = inst("PUSHIS",0xa)
+        f043_menorah_insts[219] = inst("PUSHIS",0xa)
+        f043_menorah_insts[315] = inst("PUSHIS",0xa)
+        f043_menorah_insts[321] = inst("PUSHIS",0xa)
+        f043_menorah_insts[419] = inst("PUSHIS",0xa)
+        f043_menorah_insts[424] = inst("PUSHIS",0xa)
+        f043_menorah_insts[456] = inst("PUSHIS",0xa)
+        f043_menorah_insts[468] = inst("PUSHIS",0xa)
+        f043_menorah_insts[480] = inst("PUSHIS",0xa)
+        precut = 42
+        postcut = 44
+        precut2 = 76
+        postcut2 = 88
+        precut3 = 178
+        postcut3 = 190
+        precut4 = 280
+        postcut4 = 292
+        precut5 = 388
+        postcut5 = 394
+        precut6 = 435
+        postcut6 = 446
+        diff = postcut-precut
+        diff2 = postcut2 - precut2
+        diff3 = postcut3 - precut3
+        diff4 = postcut4 - precut4
+        diff5 = postcut5 - precut5
+        diff6 = postcut6 - precut6
+        for l in f043_menorah_labels:
+            if l.label_offset > precut:
+                l.label_offset -= diff
+                if l.label_offset > precut2:
+                    l.label_offset -= diff2
+                    if l.label_offset > precut3:
+                        l.label_offset -= diff3
+                        if l.label_offset > precut4:
+                            l.label_offset -= diff4
+                            if l.label_offset > precut5:
+                                l.label_offset -= diff5
+                                if l.label_offset > precut6:
+                                    l.label_offset -= diff6
+        f043_menorah_insts = f043_menorah_insts[:precut] + f043_menorah_insts[postcut:precut2] + f043_menorah_insts[postcut2:precut3] + f043_menorah_insts[postcut3:precut4] + f043_menorah_insts[postcut4:precut5] + f043_menorah_insts[postcut5:precut6] + f043_menorah_insts[postcut6:]
+        f043_obj.changeProcByIndex(f043_menorah_insts, f043_menorah_labels, f043_menorah_proc)
+
         f043_lb = self.push_bf_into_lb(f043_obj, 'f043')
         self.dds3.add_new_file(custom_vals.LB0_PATH['f043'], f043_lb)
         
@@ -4469,33 +6060,55 @@ class Script_Modifier:
         e749_obj = self.get_script_obj_by_name('e749')
         e749_main_proc = e749_obj.getProcIndexByLabel("e749_main")
         e749_main_insts, e749_main_labels = e749_obj.getProcInstructionsLabelsByIndex(e749_main_proc)
-        e749_main_insts = [e749_main_insts[0]] + [
-            inst("PUSHIS",0),
-            inst("PUSHIS",0x114),
-            inst("COMM",7),
-            inst("PUSHREG"),
-            inst("EQ"),
-            inst("IF",0),
-            inst("PUSHIS",0x114),
-            inst("COMM",0x8),
-            inst("PUSHIS",0x928),
-            inst("COMM",0x8),
-            inst("PUSHIS",0x2ed),
-            inst("PUSHIS",0x1c2),
-            inst("COMM",0x28),
-            inst("END"),
-            inst("PUSHIS",0x2ed),
-            inst("PUSHIS",0x2c),
-            inst("PUSHIS",0x1),
-            inst("COMM",0x97),
-            inst("COMM",0x23),
-            inst("COMM",0x2e),
-            inst("END")
-        ]
-        e749_main_labels = [
-            assembler.label("BELZ_FOUGHT",15)
-        ]
-        e749_obj.changeProcByIndex(e749_main_insts, e749_main_labels, e749_main_proc)
+        if not config_settings.longest_cutscenes:
+           e749_main_insts = [e749_main_insts[0]] + [
+               inst("PUSHIS",0),
+               inst("PUSHIS",0x114),
+               inst("COMM",7),
+               inst("PUSHREG"),
+               inst("EQ"),
+               inst("IF",0),
+               inst("PUSHIS",0x114),
+               inst("COMM",0x8),
+               inst("PUSHIS",0x928),
+               inst("COMM",0x8),
+               inst("PUSHIS",0x2ed),
+               inst("PUSHIS",0x1c2),
+               inst("COMM",0x28),
+               inst("END"),
+               inst("PUSHIS",0x2ed),
+               inst("PUSHIS",0x2c),
+               inst("PUSHIS",0x1),
+               inst("COMM",0x97),
+               inst("COMM",0x23),
+               inst("COMM",0x2e),
+               inst("END")
+           ]
+           e749_main_labels = [
+               assembler.label("BELZ_FOUGHT",15)
+           ]
+           e749_obj.changeProcByIndex(e749_main_insts, e749_main_labels, e749_main_proc)
+        else:
+            e749_10_proc = e749_obj.getProcIndexByLabel("e749_010")
+            e749_10_insts, e749_10_labels = e749_obj.getProcInstructionsLabelsByIndex(e749_10_proc)
+            e749_10_insts[188] = inst("PUSHIS",0xb)
+            e749_10_insts[272] = inst("PUSHIS",0x3)
+            e749_10_insts[339] = inst("PUSHIS",0x9)
+            e749_10_insts[366] = inst("PUSHIS",0xa)
+            e749_obj.changeProcByIndex(e749_10_insts, e749_10_labels, e749_10_proc)
+            e749_main_insts[62] = inst("PUSHIS",self.get_checks_boss_id("Beelzebub",world))
+            e749_main_insts[63] = inst("PUSHIS",0x6)
+            e749_main_insts[64] = inst("COMM",0x15)
+            e749_main_insts[67] = inst("PUSHIS",self.get_checks_boss_id("Beelzebub",world, index=1))
+            e749_main_insts[68] = inst("PUSHIS",0x6)
+            e749_main_insts[69] = inst("COMM",0x15)
+            e749_main_insts[109] = inst("PUSHIS",0x0)
+            e749_obj.changeProcByIndex(e749_main_insts, e749_main_labels, e749_main_proc)
+            e749_bubs_name_id = e749_obj.sections[3].messages[0x2].name_id
+            e749_bubs_message = assembler.message("...I am chief among those who fell^nfrom heaven.^n^xWith the angel of darkness,^nI lead the demons of chaos.^n^x...I am "+self.get_checks_boss_name("Beelzebub",world, immersive=True)+", ruler of death^nand warden of souls." ,"MSG_001_010")
+            e749_bubs_message.name_id = e749_bubs_name_id
+            e749_obj.changeMessageByIndex(e749_bubs_message,0x2)
+            e749_obj.changeNameByLookup("Beelzebub", self.get_checks_boss_name("Beelzebub",world, immersive=True))
         self.dds3.add_new_file(custom_vals.SCRIPT_OBJ_PATH['e749'], BytesIO(bytes(e749_obj.toBytes())))
 
         #Beelzebub callback is 0x2e8 don't forget it
@@ -4588,44 +6201,184 @@ class Script_Modifier:
         if config_settings.menorah_groups: #Menorah hint
             f044_obj.changeMessageByIndex(assembler.message("> Retrieve these candelabra^nfrom ^g"+self.get_flag_reward_location_string(0x3e1,world)+"^p.", "MSG_001_2"),0x7)
 
+        f044_door_proc = f044_obj.getProcIndexByLabel("002_door")
+        f044_door_insts, f044_door_labels = f044_obj.getProcInstructionsLabelsByIndex(f044_door_proc)
+        precut = 14
+        postcut = 40
+        diff = postcut-precut
+        for l in f044_door_labels:
+            if l.label_offset > precut:
+                l.label_offset -= diff
+        f044_door_insts = f044_door_insts[:precut] + f044_door_insts[postcut:]
+        f044_obj.changeProcByIndex(f044_door_insts, f044_door_labels, f044_door_proc)
+        
+        f044_switch_proc = f044_obj.getProcIndexByLabel("028_01eve_01")
+        f044_switch_insts, f044_switch_labels = f044_obj.getProcInstructionsLabelsByIndex(f044_switch_proc)
+        precut = 108
+        postcut = 137
+        diff = postcut-precut
+        for l in f044_switch_labels:
+            if l.label_offset > precut:
+                l.label_offset -= diff
+        f044_switch_insts = f044_switch_insts[:precut] + f044_switch_insts[postcut:]
+        f044_obj.changeProcByIndex(f044_switch_insts, f044_switch_labels, f044_switch_proc)
+
+        f044_menorah_proc = f044_obj.getProcIndexByLabel("001_01eve_01") #Shorten placing menorahs
+        f044_menorah_insts, f044_menorah_labels = f044_obj.getProcInstructionsLabelsByIndex(f044_menorah_proc)
+        f044_menorah_insts[117] = inst("PUSHIS",0xa)
+        f044_menorah_insts[123] = inst("PUSHIS",0xa)
+        f044_menorah_insts[223] = inst("PUSHIS",0xa)
+        f044_menorah_insts[229] = inst("PUSHIS",0xa)
+        f044_menorah_insts[329] = inst("PUSHIS",0xa)
+        f044_menorah_insts[335] = inst("PUSHIS",0xa)
+        f044_menorah_insts[435] = inst("PUSHIS",0xa)
+        f044_menorah_insts[441] = inst("PUSHIS",0xa)
+        f044_menorah_insts[543] = inst("PUSHIS",0xa)
+        f044_menorah_insts[548] = inst("PUSHIS",0xa)
+        f044_menorah_insts[580] = inst("PUSHIS",0xa)
+        f044_menorah_insts[592] = inst("PUSHIS",0xa)
+        f044_menorah_insts[604] = inst("PUSHIS",0xa)
+        precut = 42
+        postcut = 44
+        precut2 = 82
+        postcut2 = 94
+        precut3 = 188
+        postcut3 = 200
+        precut4 = 294
+        postcut4 = 306
+        precut5 = 400
+        postcut5 = 412
+        precut6 = 512
+        postcut6 = 518
+        precut7 = 559
+        postcut7 = 570
+        diff = postcut-precut
+        diff2 = postcut2 - precut2
+        diff3 = postcut3 - precut3
+        diff4 = postcut4 - precut4
+        diff5 = postcut5 - precut5
+        diff6 = postcut6 - precut6
+        diff7 = postcut7 - precut7
+        for l in f044_menorah_labels:
+            if l.label_offset > precut:
+                l.label_offset -= diff
+                if l.label_offset > precut2:
+                    l.label_offset -= diff2
+                    if l.label_offset > precut3:
+                        l.label_offset -= diff3
+                        if l.label_offset > precut4:
+                            l.label_offset -= diff4
+                            if l.label_offset > precut5:
+                                l.label_offset -= diff5
+                                if l.label_offset > precut6:
+                                    l.label_offset -= diff6
+                                    if l.label_offset > precut7:
+                                        l.label_offset -= diff7
+        f044_menorah_insts = f044_menorah_insts[:precut] + f044_menorah_insts[postcut:precut2] + f044_menorah_insts[postcut2:precut3] + f044_menorah_insts[postcut3:precut4] + f044_menorah_insts[postcut4:precut5] + f044_menorah_insts[postcut5:precut6] + f044_menorah_insts[postcut6:precut7] + f044_menorah_insts[postcut7:]
+        f044_obj.changeProcByIndex(f044_menorah_insts, f044_menorah_labels, f044_menorah_proc)
+
         f044_lb = self.push_bf_into_lb(f044_obj, 'f044')
         self.dds3.add_new_file(custom_vals.LB0_PATH['f044'], f044_lb)
+        
+        #Shorten Dante Recruit
+        e730_obj = self.get_script_obj_by_name('e730')
+        e730_main_proc = e730_obj.getProcIndexByLabel("e730_main")
+        e730_main_insts, e730_main_labels = e730_obj.getProcInstructionsLabelsByIndex(e730_main_proc)
+        precut = 231
+        postcut = 1060
+        diff = postcut - precut
+        for l in e730_main_labels:
+            if l.label_offset > precut:
+                l.label_offset -= diff
+                if l.label_offset < 1:
+                    l.label_offset = 1
+        e730_main_insts = e730_main_insts[:precut] + e730_main_insts[postcut:]
+        e730_obj.changeProcByIndex(e730_main_insts, e730_main_labels, e730_main_proc)
+        self.dds3.add_new_file(custom_vals.SCRIPT_OBJ_PATH['e730'], BytesIO(bytes(e730_obj.toBytes())))
         
         #Shorten Metatron
         e750_obj = self.get_script_obj_by_name('e750')
         e750_main_proc = e750_obj.getProcIndexByLabel("e750_main")
         e750_main_insts, e750_main_labels = e750_obj.getProcInstructionsLabelsByIndex(e750_main_proc)
-        e750_main_insts = [e750_main_insts[0]] + [
-            inst("PUSHIS",0),
-            inst("PUSHIS",0x115),
-            inst("COMM",7),
-            inst("PUSHREG"),
-            inst("EQ"),
-            inst("IF",0),
-            inst("PUSHIS",0x115),
-            inst("COMM",0x8),
-            inst("PUSHIS",0x91b),
-            inst("COMM",0x8),
-            inst("PUSHIS",0x2ee),
-            inst("PUSHIS",0x1c1),
-            inst("COMM",0x28),
-            inst("END"),
-            inst("PUSHIS",0x2ee),
-            inst("PUSHIS",0x2d),
-            inst("PUSHIS",0x1),
-            inst("COMM",0x97),
-            inst("COMM",0x23),
-            inst("COMM",0x2e),
-            inst("END")
-        ]
-        e750_main_labels = [
-            assembler.label("META_FOUGHT",15)
-        ]
-        e750_obj.changeProcByIndex(e750_main_insts, e750_main_labels, e750_main_proc)
+        if not config_settings.longest_cutscenes:
+            e750_main_insts = [e750_main_insts[0]] + [
+                inst("PUSHIS",0),
+                inst("PUSHIS",0x115),
+                inst("COMM",7),
+                inst("PUSHREG"),
+                inst("EQ"),
+                inst("IF",0),
+                inst("PUSHIS",0x115),
+                inst("COMM",0x8),
+                inst("PUSHIS",0x91b),
+                inst("COMM",0x8),
+                inst("PUSHIS",0x2ee),
+                inst("PUSHIS",0x1c1),
+                inst("COMM",0x28),
+                inst("END"),
+                inst("PUSHIS",0x2ee),
+                inst("PUSHIS",0x2d),
+                inst("PUSHIS",0x1),
+                inst("COMM",0x97),
+                inst("COMM",0x23),
+                inst("COMM",0x2e),
+                inst("END")
+            ]
+            e750_main_labels = [
+                assembler.label("META_FOUGHT",15)
+            ]
+            e750_obj.changeProcByIndex(e750_main_insts, e750_main_labels, e750_main_proc)
+        else: #Metatron model swap
+            e750_10_proc = e750_obj.getProcIndexByLabel("e750_010")
+            e750_10_insts, e750_10_labels = e750_obj.getProcInstructionsLabelsByIndex(e750_10_proc)
+            e750_10_insts[196] = inst("PUSHIS",0x0)
+            e750_10_insts[279] = inst("PUSHIS",0x5)
+            e750_obj.changeProcByIndex(e750_10_insts, e750_10_labels, e750_10_proc)
+            e750_main_insts[62] = inst("PUSHIS",self.get_checks_boss_id("Metatron",world))
+            e750_main_insts[63] = inst("PUSHIS",0x6)
+            e750_main_insts[64] = inst("COMM",0x15)
+            e750_obj.changeProcByIndex(e750_main_insts, e750_main_labels, e750_main_proc)
+            e750_meta_name_id = e750_obj.sections[3].messages[0x3].name_id
+            e750_meta_message = assembler.message("Listen! And tremble in fear!^n^xI am "+self.get_checks_boss_name("Metatron",world, immersive=True)+"! I am one with god!^n^x...By his will, I shall destroy you!!" ,"MSG_004")
+            e750_meta_message.name_id = e750_meta_name_id
+            e750_obj.changeMessageByIndex(e750_meta_message,0x3)
+            e750_obj.changeNameByLookup("Metatron", self.get_checks_boss_name("Metatron",world, immersive=True))
         self.dds3.add_new_file(custom_vals.SCRIPT_OBJ_PATH['e750'], BytesIO(bytes(e750_obj.toBytes())))
         
         #Metatron callback is 0x1bc, don't forget it
         f045_obj = self.get_script_obj_by_name('f045')
+        
+        f045_tutorial_end_proc = f045_obj.getProcIndexByLabel("027_lui")
+        f045_tutorial_end_insts, f045_tutorial_end_labels = f045_obj.getProcInstructionsLabelsByIndex(f045_tutorial_end_proc)
+        f045_tutorial_end_insts = [f045_tutorial_end_insts[0]] + [
+            inst("PUSHIS",0x440),
+            inst("COMM",0x8),
+            inst("PUSHIS",0xab),
+            inst("COMM",0x20f),
+            inst("END"),
+            inst("END")
+        ]
+        f045_obj.changeProcByIndex(f045_tutorial_end_insts, f045_tutorial_end_labels, f045_tutorial_end_proc)
+        
+        f045_tutorial_start_proc = f045_obj.getProcIndexByLabel("030_voice")
+        f045_tutorial_start_insts, f045_tutorial_start_labels = f045_obj.getProcInstructionsLabelsByIndex(f045_tutorial_start_proc)
+        f045_tutorial_start_insts = [f045_tutorial_start_insts[0]] + [
+            inst("COMM",0x60),
+            inst("PUSHIS",0x0),
+            inst("COMM",0xc3),
+            inst("PUSHIS",0x1e),
+            inst("PUSHIS",0x1),
+            inst("COMM",0xf),
+            inst("PUSHIS",0x50),
+            inst("COMM",0xf3),
+            inst("PUSHIS",0x78),
+            inst("COMM",0xe),
+            inst("PUSHIS",0x3),
+            inst("COMM",0xc3),
+            inst("COMM",0x61),
+            inst("END")
+        ]
+        f045_obj.changeProcByIndex(f045_tutorial_start_insts, f045_tutorial_start_labels, f045_tutorial_start_proc)
 
         f045_meta_rwms = f045_obj.appendMessage(self.get_reward_str("Metatron",world),"META_RWMS")
         f045_meta_rwms_insts = [
@@ -4696,9 +6449,62 @@ class Script_Modifier:
             if l.label_offset > 60:
                 l.label_offset += 4
         f045_obj.changeProcByIndex(f045_lobby_tunnel_insts, f045_lobby_tunnel_labels, f045_lobby_tunnel_proc)
+
+        f045_menorah_proc = f045_obj.getProcIndexByLabel("001_01eve_01") #Shorten placing menorah
+        f045_menorah_insts, f045_menorah_labels = f045_obj.getProcInstructionsLabelsByIndex(f045_menorah_proc)
+        f045_menorah_insts[141] = inst("PUSHIS",0xa)
+        f045_menorah_insts[147] = inst("PUSHIS",0xa)
+        f045_menorah_insts[206] = inst("PUSHIS",0xa)
+        f045_menorah_insts[211] = inst("PUSHIS",0xa)
+        f045_menorah_insts[257] = inst("PUSHIS",0xa)
+        f045_menorah_insts[269] = inst("PUSHIS",0xa)
+        f045_menorah_insts[274] = inst("PUSHIS",0xa)
+        precut = 100
+        postcut = 118
+        precut2 = 157
+        postcut2 = 161
+        precut3 = 173
+        postcut3 = 179
+        precut4 = 224
+        postcut4 = 235
+        diff = postcut-precut
+        diff2 = postcut2-precut2
+        diff3 = postcut3-precut3
+        diff4 = postcut4-precut4
+        for l in f045_menorah_labels:
+            if l.label_offset > precut:
+                l.label_offset -= diff
+                if l.label_offset > precut2:
+                    l.label_offset -= diff2
+                    if l.label_offset > precut3:
+                        l.label_offset -= diff3
+                        if l.label_offset > precut4:
+                            l.label_offset -= diff4
+        f045_menorah_insts = f045_menorah_insts[:precut] + f045_menorah_insts[postcut:precut2] + f045_menorah_insts[postcut2:precut3] + f045_menorah_insts[postcut3:precut4] + f045_menorah_insts[postcut4:]
+        f045_obj.changeProcByIndex(f045_menorah_insts, f045_menorah_labels, f045_menorah_proc)
         
+        f045_demon_name_id = f045_obj.sections[3].messages[0xae].name_id #Taotie dialogue in Kalpa 5
+        f045_demon_message = assembler.message("CAN YOU FEEL IT?^n^xI CAN FEEL GREAT POWER^nFROM THIS DOOR,^nWHICH LEADS BELOW...^xSOMETHING EVEN STRONGER^nTHAN "+self.get_checks_boss_name("Beelzebub",world, immersive=True).upper()+"...^n^xIF YOU CHOOSE TO PROCEED,^nBE CAREFUL." ,"MSG_F45_A18_AKUMA01")
+        f045_demon_message.name_id = f045_demon_name_id
+        f045_obj.changeMessageByIndex(f045_demon_message,0xae)
+
         f045_lb = self.push_bf_into_lb(f045_obj, 'f045')
         self.dds3.add_new_file(custom_vals.LB0_PATH['f045'], f045_lb)
+
+        #Shorten LOA complete cutscenes
+        e718_obj = self.get_script_obj_by_name('e718')
+        e718_main_proc = e718_obj.getProcIndexByLabel("e718_main")
+        e718_main_insts, e718_main_labels = e718_obj.getProcInstructionsLabelsByIndex(e718_main_proc)
+        e718_main_insts = [e718_main_insts[0]] + e718_main_insts[662:666]
+        e718_obj.changeProcByIndex(e718_main_insts, e718_main_labels, e718_main_proc)
+        self.dds3.add_new_file(custom_vals.SCRIPT_OBJ_PATH['e718'], BytesIO(bytes(e718_obj.toBytes())))
+
+        e719_obj = self.get_script_obj_by_name('e719')
+        e719_main_proc = e719_obj.getProcIndexByLabel("e719_main")
+        e719_main_insts, e719_main_labels = e719_obj.getProcInstructionsLabelsByIndex(e719_main_proc)
+        e719_main_insts = [e719_main_insts[0]] + e719_main_insts[157:]
+        e719_obj.changeProcByIndex(e719_main_insts, e719_main_labels, e719_main_proc)
+        self.dds3.add_new_file(custom_vals.SCRIPT_OBJ_PATH['e719'], BytesIO(bytes(e719_obj.toBytes())))
 
         if SCRIPT_DEBUG:
             self.script_debug_out( f040_obj,'f040.bf')
@@ -4716,11 +6522,25 @@ class Script_Modifier:
             self.script_debug_out( e729_obj,'e729.bf')
             self.script_debug_out( self.get_script_obj_by_name('e731'),'e731.bf')
             self.script_debug_out( e728_obj,'e728.bf')
-            self.script_debug_out( self.get_script_obj_by_name('e730'),'e730.bf')
+            self.script_debug_out( e730_obj,'e730.bf')
             self.script_debug_out( e749_obj,'e749.bf')
             self.script_debug_out( e750_obj,'e750.bf')
-            self.script_debug_out( self.get_script_obj_by_name('e718'),'e718.bf')
-            self.script_debug_out( self.get_script_obj_by_name('e719'),'e719.bf')
+            self.script_debug_out( e718_obj,'e718.bf')
+            self.script_debug_out( e719_obj,'e719.bf')
+            self.script_debug_out( e740_obj,'e740.bf')
+            self.script_debug_out( e741_obj,'e741.bf')
+            self.script_debug_out( e742_obj,'e742.bf')
+            self.script_debug_out( e743_obj,'e743.bf')
+            self.script_debug_out( e744_obj,'e744.bf')
+            self.script_debug_out( e745_obj,'e745.bf')
+            self.script_debug_out( e746_obj,'e746.bf')
+            self.script_debug_out( self.get_script_obj_by_name('e747'),'e747.bf')
+            self.script_debug_out( self.get_script_obj_by_name('e748'),'e748.bf')
+            self.script_debug_out( e634_obj,'e634.bf')
+            self.script_debug_out( self.get_script_obj_by_name('e800'),'e800.bf')
+            self.script_debug_out( self.get_script_obj_by_name('e802'),'e802.bf')
+            #self.script_debug_out( self.get_script_obj_by_name('e618'),'e618.bf') error because of bad character
+            #self.script_debug_out( self.get_script_obj_by_name('e619'),'e619.bf')
             #self.script_debug_out( self.get_script_obj_by_name('e751'),'e751.bf') This causes an error because no text
             #self.script_debug_out( self.get_script_obj_by_name('e752'),'e752.bf')
             #self.script_debug_out( self.get_script_obj_by_name('e753'),'e753.bf')

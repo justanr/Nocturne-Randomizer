@@ -352,4 +352,7 @@ class Settings(object):
         self.no_level_safety = False             # The logic may expect you to visit high level areas early
         self.no_magatama_safety = False          # The logic will not guarantee any magatamas for bosses
         self.bosses_go_first_more_often = False  # No one will use this
+        self.shortest_cutscenes = False          # Skip as many cutscenes as possible
+        self.longest_cutscenes = False           # Watch boss cutscenes more often
+        self.low_level = False                   # Random encounters will not give exp
         self.export_to_hostfs = False            # Build to folder with HostFS patch instead of an .iso

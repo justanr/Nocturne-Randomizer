@@ -457,7 +457,10 @@ def write_battles(rom, new_battles, preserve_boss_arenas=False):
             rom.write_halfword(0x00, b.offset + 0x02)
         if 345 >= b.reward >= 320:
             rom.write_halfword(b.reward, b.offset + 0x02)'''
-        rom.write_halfword(b.reward, b.offset + 0x02)
+        if 345 >= b.reward >= 320:
+            rom.write_halfword(0, b.offset + 0x02) #Magatama rewards are given through eventing now, so this is no longer necessary
+        else:
+            rom.write_halfword(b.reward, b.offset + 0x02) 
         rom.write_halfword(b.phase_value, b.offset + 0x04)
         rom.seek(b.offset + 0x06)
         for e in b.enemies:
@@ -728,7 +731,6 @@ def load_all(rom):
     #load_skills(rom)
     load_magatamas(rom)
     load_battles(rom)
-    #load_skill_changes(rom) #Temporary logging function
 
 def write_all(rando, world):
     rom = rando.rom
@@ -791,6 +793,7 @@ def write_all(rando, world):
     # replace koppa and incubus in the nihilo fight
     patch_incubus_koppa(rom, world.demon_map)
     # fix the magatama drop on the fused versions of specter 1
+    '''
     for b in world.battles.values():
         if b.offset == world.get_boss("Specter 1").check.offset:
             if b.reward:
@@ -807,9 +810,7 @@ def write_all(rando, world):
         elif b.offset == world.get_boss("Noah").check.offset:
             if b.reward:
                 fix_noah_reward(rom, b.reward)
-    #if world.get_boss("Specter 1").battle.reward:
-    #    print("found a specter")
-    #    fix_specter_1_reward(rom, world.get_boss("Specter 1").battle.reward) #fix specter 1 reward
+    '''
 
 
     # replace the DUMMY personality on certain demons

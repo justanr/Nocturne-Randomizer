@@ -110,7 +110,12 @@ class Randomizer:
             d = next((d for d in demon_gen.demons if d.name == element.name), None)
             # choose a demon in demon pool that is the same level as the generated demon
             candidates = [c for c in demon_pool if c.level == d.level]
-            chosen_demon = random.choice(candidates)
+            try:
+                chosen_demon = random.choice(candidates)
+            except IndexError:
+                print("error: No demon candidate for an element")
+                candidates = [c for c in demon_pool if abs(c.level - d.level) < 6]
+                chosen_demon = random.choice(candidates)
             # find the elemental in the map and swap
             if chosen_demon:
                 demon_pool.remove(chosen_demon)
@@ -124,7 +129,12 @@ class Randomizer:
             d = next((d for d in demon_gen.demons if d.name == mitama.name), None)
             # choose a demon in demon pool that is the same level as the generated demon
             candidates = [c for c in demon_pool if c.level == d.level]
-            chosen_demon = random.choice(candidates)
+            try:
+                chosen_demon = random.choice(candidates)
+            except IndexError:
+                print("error: No demon candidate for a mitama")
+                candidates = [c for c in demon_pool if abs(c.level - d.level) < 6]
+                chosen_demon = random.choice(candidates)
             # find the mitama in the map and swap
             if chosen_demon:
                 demon_pool.remove(chosen_demon)
@@ -158,7 +168,12 @@ class Randomizer:
             gen_fiend = generated_fiends.pop()
             # choose a demon in demon pool that is the same level as the generated demon
             candidates = [c for c in demon_pool if c.level == gen_fiend.level]
-            chosen_demon = random.choice(candidates)
+            try:
+                chosen_demon = random.choice(candidates)
+            except IndexError:
+                print("error: No demon candidate for a fiend")
+                candidates = [c for c in demon_pool if abs(c.level - gen_fiend.level) < 6]
+                chosen_demon = random.choice(candidates)
             # find the fiend in the map and swap
             if chosen_demon:
                 demon_pool.remove(chosen_demon)
@@ -440,6 +455,8 @@ class Randomizer:
 
     def randomize_demons(self, demon_map, generated_demons, exp_mod=1, enemy_skill_scaling = False, macca_mod=1):
         new_demons = []
+        if self.config_settings.low_level:
+            exp_mod = 0
         # buffs/debuffs to give to base demons + tetraja
         skills_to_distribute = [52, 53, 54, 57, 64, 65, 66, 67, 77, 68]
         random.shuffle(skills_to_distribute)
@@ -575,8 +592,8 @@ class Randomizer:
     # bosses that should always go first regardless of settings, removing Matador and Mizuchi for now
     always_goes_first = ['Specter 1 (Boss)', 'Specter 2 (Boss)', 'Specter 3 (Boss)', 'Ongyo-Ki (Boss)', 'White Rider (Boss)', 'Red Rider (Boss)', 'Black Rider (Boss)', 'Pale Rider (Boss)', 'Albion (Boss)', 'Trumpeter (Boss)', 'Ahriman 1st Form (Boss)']
     never_goes_first = ['Baal Avatar (Boss)', 'Lucifer (Boss)', 'Samael (Boss)', 'Bishamon 2 (Boss)', 'Koumoku (Boss)']
-    go_first_checks = ['Matador (Boss)', 'Daisoujou (Boss)', 'Hell Biker (Boss)', 'Mizuchi (Boss)', 'Black Frost (Boss)', 'Mother Harlot (Boss)', 'Mara (Boss)',
-                       'Futomimi (Boss)', 'Trumpeter (Boss)', 'Bishamon 1 (Boss)', 'Surt (Boss)', 'Mada (Boss)', 'Dante 2 (Boss)', 'Beezlebub (Boss)', 'Metatron (Boss)']
+    go_first_checks = ['Matador (Boss)', 'Daisoujou (Boss)', 'Hell Biker (Boss)', 'Mizuchi (Boss)', 'Black Frost (Boss)', 'The Harlot (Boss)', 'Mara (Boss)',
+                       'Futomimi (Boss)', 'Trumpeter (Boss)', 'Bishamon 1 (Boss)', 'Surt (Boss)', 'Mada (Boss)', 'Dante 2 (Boss)', 'Beezlebub Fly (Boss)', 'Metatron (Boss)']
 
     def randomize_boss_battles(self, world):
         boss_demons = []

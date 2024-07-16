@@ -76,8 +76,8 @@ False,Last Resort,Sacrifice
 False,Last Resort,Kamikaze
 False,Me Patra,Prayer
 True,Agidyne,Ragnarok
-True,Agidyne,Magma Axis
-True,Maragion,Hell Burner
+True,Agilao,Magma Axis
+True,Maragi,Hell Burner
 True,Mazionga,Roundtrip
 True,Mazanma,Hell Exhaust
 True,Mazanma,Whirlwind
