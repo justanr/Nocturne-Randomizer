@@ -6,23 +6,24 @@ from fs.fs_utils import *
 
 SECTOR_SIZE = 2048
 
+
 # Code based off of https://github.com/TGEnigma/AtlusFileSystemLibrary
 class LBFileEntry(object):
     def __init__(self):
-        self.user_id = None 
+        self.user_id = None
         # self.handle = None
 
     def read(self, offset, data):
         # self.handle = handle
         self.entry_type = int(data[0])
         self.compressed = int(data[1])
-        self.user_id = int(struct.unpack('<H', data[2:4])[0])
-        self.size = int(struct.unpack('<I', data[4:8])[0]) - 16
-        self.extension = data[8:12].decode().replace('\0', '')
-        self.decompressed_size = int(struct.unpack('<I', data[12:16])[0])
+        self.user_id = int(struct.unpack("<H", data[2:4])[0])
+        self.size = int(struct.unpack("<I", data[4:8])[0]) - 16
+        self.extension = data[8:12].decode().replace("\0", "")
+        self.decompressed_size = int(struct.unpack("<I", data[12:16])[0])
         self.offset = offset
         # self.name = ''.join([str(handle), '_', str(self.user_id), ".", self.extension.replace('\0', '')])
-        self.name = ''.join([str(self.user_id), ".", self.extension])
+        self.name = "".join([str(self.user_id), ".", self.extension])
 
     def decompress(self, lb_file):
         self.decompressed = []
@@ -30,7 +31,7 @@ class LBFileEntry(object):
         lb_file.seek(self.offset)
         while len(self.decompressed) < self.decompressed_size:
             op = read_byte(lb_file)
-            
+
             count = op & 0x1F
             if count == 0:
                 count = read_halfword(lb_file)
@@ -67,10 +68,16 @@ class LBFileEntry(object):
                     self.decompressed.append(read_byte(lb_file))
                     self.decompressed.append(0)
             else:
-                print("Error at " + hex(lb_file.tell()) + " with unknown opcode " + hex(opcode))
+                print(
+                    "Error at "
+                    + hex(lb_file.tell())
+                    + " with unknown opcode "
+                    + hex(opcode)
+                )
                 return
 
         return BytesIO(bytes(self.decompressed))
+
 
 class LB_FS(object):
     def __init__(self, lb_file):
@@ -95,12 +102,12 @@ class LB_FS(object):
             entry.read(entry_offset, entry_data)
 
             self.file_entries[entry.extension] = entry
-            current_offset += (entry.size + 16)
+            current_offset += entry.size + 16
             if current_offset % 64 != 0:
                 current_offset += 64 - (current_offset % 64)
 
     def pad_lb_by(self, amount):
-        self.output_lb.write(b"\0"*amount)
+        self.output_lb.write(b"\0" * amount)
 
     def align_lb_to(self, size):
         offset = self.output_lb.tell()
@@ -126,7 +133,7 @@ class LB_FS(object):
         return self.get_file_by_entry(entry)
 
     def add_new_file(self, extension, data):
-        new_entry = LBFileEntry()        
+        new_entry = LBFileEntry()
         new_entry.entry_type = 1
         new_entry.compressed = 0
         if self.file_entries.get(extension):
@@ -136,7 +143,7 @@ class LB_FS(object):
         new_entry.size = file_len(data)
         new_entry.extension = extension
         new_entry.decompressed_size = new_entry.size
-        new_entry.name = ''.join([str(new_entry.user_id), ".", extension])
+        new_entry.name = "".join([str(new_entry.user_id), ".", extension])
 
         self.file_entries[extension] = new_entry
         self.changes[extension] = data
@@ -146,7 +153,7 @@ class LB_FS(object):
         self.output_lb = BytesIO()
 
         for extension in self.changes:
-            #if not self.get_file_by_extension(extension):
+            # if not self.get_file_by_extension(extension):
             self.add_new_file(extension, self.changes[extension])
 
         file_entries_in_order = [entry for name, entry in self.file_entries.items()]
@@ -157,7 +164,7 @@ class LB_FS(object):
             write_byte(self.output_lb, current_offset, e.entry_type)
             write_byte(self.output_lb, current_offset + 1, e.compressed)
             write_halfword(self.output_lb, current_offset + 2, e.user_id)
-            extension = e.extension.upper().ljust(4, '\0')
+            extension = e.extension.upper().ljust(4, "\0")
             write_word(self.output_lb, current_offset + 4, e.size + 16)
             write_bytes(self.output_lb, current_offset + 8, extension.encode())
             write_word(self.output_lb, current_offset + 12, e.decompressed_size)
@@ -173,7 +180,26 @@ class LB_FS(object):
 
         # write end entry
         current_offset = self.output_lb.tell()
-        end = bytes([0xFF, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0x45, 0x4E, 0x44, 0x30, 0x00, 0x00, 0x00, 0x00])
+        end = bytes(
+            [
+                0xFF,
+                0x00,
+                0x00,
+                0x00,
+                0x10,
+                0x00,
+                0x00,
+                0x00,
+                0x45,
+                0x4E,
+                0x44,
+                0x30,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+            ]
+        )
         write_bytes(self.output_lb, current_offset, end)
         self.align_lb_to(64)
 

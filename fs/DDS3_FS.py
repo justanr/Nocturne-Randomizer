@@ -6,6 +6,7 @@ from fs.fs_utils import *
 
 SECTOR_SIZE = 2048
 
+
 # Code based off of https://github.com/TGEnigma/AtlusFileSystemLibrary/
 class DDS3FileEntry(object):
     def __init__(self):
@@ -13,10 +14,10 @@ class DDS3FileEntry(object):
         self.is_dir = False
 
     def read(self, ddt_file, data):
-        self.name_offset = int(struct.unpack('<I', data[0:4])[0])
+        self.name_offset = int(struct.unpack("<I", data[0:4])[0])
         # location is sector in IMG file not actual offset
-        self.location = int(struct.unpack('<I', data[4:8])[0])
-        self.size = int(struct.unpack('<i', data[8:12])[0])
+        self.location = int(struct.unpack("<I", data[4:8])[0])
+        self.size = int(struct.unpack("<i", data[8:12])[0])
 
         self.name = ""
         saved_pos = ddt_file.tell()
@@ -34,6 +35,7 @@ class DDS3FileEntry(object):
             self.is_dir = True
             self.size = -self.size
             self.children = {}
+
 
 class DDS3FS(object):
     def __init__(self, ddt_path, img_path):
@@ -94,7 +96,7 @@ class DDS3FS(object):
         offset = entry.location * SECTOR_SIZE
         size_to_read = entry.size
 
-        with open(self.img_path, 'rb') as img_path:
+        with open(self.img_path, "rb") as img_path:
             img_path.seek(offset)
             data = BytesIO(img_path.read(size_to_read))
         return data
@@ -118,7 +120,7 @@ class DDS3FS(object):
         self.changes[path] = data
 
     def pad_file_by(self, file, amount):
-        file.write(b"\0"*amount)
+        file.write(b"\0" * amount)
 
     def align_file_to(self, file, size):
         offset = file.tell()
@@ -127,13 +129,13 @@ class DDS3FS(object):
             self.pad_file_by(file, padding_needed)
 
     # copy 1:1 from the original img in chunks to save on memory usage
-    def copy_from_input(self, offset, size, chunk_size=1024*1024):
+    def copy_from_input(self, offset, size, chunk_size=1024 * 1024):
         size_remaining = size
         input_offset = 0
         while size_remaining > 0:
             size_to_read = min(size_remaining, chunk_size)
 
-            with open(self.img_path, 'rb') as img_file:
+            with open(self.img_path, "rb") as img_file:
                 data = read_bytes(img_file, offset + input_offset, size_to_read)
             self.output_img.write(data)
 
@@ -142,7 +144,7 @@ class DDS3FS(object):
 
     def write_name_and_offset(self, entry):
         new_offset = self.output_ddt.tell()
-        
+
         self.output_ddt.write(entry.name.encode() + b"\0")
         self.align_file_to(self.output_ddt, 4)
         saved_offset = self.output_ddt.tell()
@@ -161,13 +163,13 @@ class DDS3FS(object):
     def write_entry(self, entry):
         # fill in the name_offset location later
         entry.offset = self.output_ddt.tell()
-        self.output_ddt.write(b'\0'*4)
+        self.output_ddt.write(b"\0" * 4)
 
         if entry.name != "":
             self.post_writes.append((self.write_name_and_offset, entry))
 
         if entry.is_dir:
-            self.output_ddt.write(b'\0'*4)
+            self.output_ddt.write(b"\0" * 4)
             self.post_writes.append((self.write_offset, entry))
 
             for child_entry in entry.children.values():
@@ -176,8 +178,7 @@ class DDS3FS(object):
             write_signed_word(self.output_ddt, entry.offset + 8, -len(entry.children))
         else:
             write_word(self.output_ddt, entry.offset + 4, entry.location)
-            write_word(self.output_ddt, entry.offset + 8, entry.size)  
-
+            write_word(self.output_ddt, entry.offset + 8, entry.size)
 
     def export_dds3(self, output_ddt_path, output_img_path, changes={}):
         self.changes.update(changes)
@@ -187,8 +188,8 @@ class DDS3FS(object):
             if not self.find_by_path(path):
                 self.add_new_file(path, self.changes[path])
 
-        self.output_ddt = open(output_ddt_path, 'wb')
-        self.output_img = open(output_img_path, 'wb')
+        self.output_ddt = open(output_ddt_path, "wb")
+        self.output_img = open(output_img_path, "wb")
 
         for entry in self.file_entries.values():
             if not entry.is_dir:
@@ -203,24 +204,24 @@ class DDS3FS(object):
                 else:
                     offset = entry.location * SECTOR_SIZE
                     self.copy_from_input(offset, size)
-                    
+
                 entry.location = new_location
                 entry.size = size
 
                 self.align_file_to(self.output_img, SECTOR_SIZE)
 
         self.write_entry(self.root)
-        for (f, entry) in self.post_writes:
+        for f, entry in self.post_writes:
             f(entry)
 
         self.output_ddt.close()
-        self.output_img.close()  
+        self.output_img.close()
         self.output_ddt = None
-        self.output_img = None      
+        self.output_img = None
 
     def check_diff(self, entry_data, input_path):
         buff_size = 2**20
-        with open(input_path, 'rb') as f:
+        with open(input_path, "rb") as f:
             while True:
                 d1 = entry_data.read(buff_size)
                 d2 = f.read(buff_size)
@@ -235,18 +236,18 @@ class DDS3FS(object):
                 os.mkdir(output_path)
 
             for child_entry in entry.children.values():
-                child_path = '/'.join([output_path, child_entry.name])
+                child_path = "/".join([output_path, child_entry.name])
                 self.export_entry(child_entry, child_path)
         else:
             entry_data = self.get_file_from_path(entry.path)
             if os.path.exists(output_path) and entry.path not in self.changes.keys():
                 if os.stat(output_path).st_size != entry_data.getbuffer().nbytes:
                     if self.check_diff(entry_data, output_path):
-                        with open(output_path, 'wb') as f:
+                        with open(output_path, "wb") as f:
                             entry_data.seek(0)
                             f.write(entry_data.read())
             else:
-                with open(output_path, 'wb') as f:
+                with open(output_path, "wb") as f:
                     f.write(entry_data.read())
 
     def export_dds3_to_folder(self, output_path, changes={}):

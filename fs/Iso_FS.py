@@ -7,6 +7,7 @@ from fs.fs_utils import *
 SECTOR_SIZE = 2048
 SYSTEM_HEADER_SIZE = 32768
 
+
 class IsoFileEntry(object):
     def __init__(self):
         self.parent = None
@@ -15,27 +16,28 @@ class IsoFileEntry(object):
     def read(self, entry_offset, data):
         self.entry_offset = entry_offset
         self.entry_length = len(data)
-        self.location = int(struct.unpack('<I', data[2:6])[0])
-        self.size = int(struct.unpack('<I', data[10:14])[0])
+        self.location = int(struct.unpack("<I", data[2:6])[0])
+        self.size = int(struct.unpack("<I", data[10:14])[0])
         self.flags = int(data[25])
-        self.volume = int(struct.unpack('<H', data[28:30])[0])
+        self.volume = int(struct.unpack("<H", data[28:30])[0])
 
         name_length = int(data[32])
 
         if name_length == 1:
             c = chr(data[33])
-            if c == '\u0000':
+            if c == "\u0000":
                 self.name = "."
-            elif c == '\u0001':
+            elif c == "\u0001":
                 self.name = ".."
             else:
                 self.name = c.decode()
         else:
-            self.name = data[33:33+name_length].decode()
+            self.name = data[33 : 33 + name_length].decode()
 
         if self.flags == 2:
             self.is_dir = True
             self.children = {}
+
 
 class IsoFS(object):
     def __init__(self, iso_path):
@@ -46,13 +48,15 @@ class IsoFS(object):
         self.iso_file = open(self.iso_path, "rb")
 
         # test if first volume is primary (should be for nocturne)
-        assert read_byte(self.iso_file, SYSTEM_HEADER_SIZE) == 1 
+        assert read_byte(self.iso_file, SYSTEM_HEADER_SIZE) == 1
         assert read_bytes(self.iso_file, SYSTEM_HEADER_SIZE + 1, 5).decode() == "CD001"
 
         self.file_entries = {}
 
         root_file_entry_length = read_byte(self.iso_file, SYSTEM_HEADER_SIZE + 156)
-        root_file_entry_data = read_bytes(self.iso_file, SYSTEM_HEADER_SIZE + 156, root_file_entry_length)
+        root_file_entry_data = read_bytes(
+            self.iso_file, SYSTEM_HEADER_SIZE + 156, root_file_entry_length
+        )
 
         self.root = IsoFileEntry()
         self.root.read(SYSTEM_HEADER_SIZE + 156, root_file_entry_data)
@@ -91,14 +95,14 @@ class IsoFS(object):
                 continue
 
             if path:
-                file_path = '/'.join([path, entry.name])
+                file_path = "/".join([path, entry.name])
             else:
                 file_path = entry.name
             entry.file_path = file_path
 
             if entry.is_dir:
                 self.read_directory(entry, file_path)
-                
+
             self.file_entries[entry.file_path] = entry
 
     # return the entry object for provided path
@@ -137,29 +141,29 @@ class IsoFS(object):
                 write_word_le(self.output_iso, offset + 10, entry.size)
                 write_word_be(self.output_iso, offset + 14, entry.size)
 
-            # padding 
+            # padding
             write_bytes(self.output_iso, offset + 18, b"\0\0\0\0\0\0\0")
             write_byte(self.output_iso, offset + 25, entry.flags)
-            # more padding 
+            # more padding
             write_bytes(self.output_iso, offset + 26, b"\0\0")
             write_halfword_le(self.output_iso, offset + 28, entry.volume)
             write_halfword_be(self.output_iso, offset + 30, entry.volume)
 
             # reconvert back the "." and ".." names
             name = entry.name
-            if name == '.':
-                name = '\u0000'
-            elif name == '..':
-                name = '\u0001'
+            if name == ".":
+                name = "\u0000"
+            elif name == "..":
+                name = "\u0001"
             write_byte(self.output_iso, offset + 32, len(name))
 
             # each entry should start on an even offset
             padding_length = (entry.entry_length - 33) - len(name)
-            padding = b"\0"*padding_length
+            padding = b"\0" * padding_length
             write_bytes(self.output_iso, offset + 33, name.encode() + padding)
 
     def pad_iso_by(self, amount):
-        self.output_iso.write(b"\0"*amount)
+        self.output_iso.write(b"\0" * amount)
 
     def align_iso_to(self, size):
         offset = self.output_iso.tell()
@@ -168,13 +172,13 @@ class IsoFS(object):
             self.pad_iso_by(padding_needed)
 
     # copy 1:1 from the original iso in chunks to save on memory usage
-    def copy_from_input(self, offset, size, chunk_size=1024*1024):
+    def copy_from_input(self, offset, size, chunk_size=1024 * 1024):
         size_remaining = size
         input_offset = 0
         while size_remaining > 0:
             size_to_read = min(size_remaining, chunk_size)
 
-            with open(self.iso_path, 'rb') as iso_file:
+            with open(self.iso_path, "rb") as iso_file:
                 data = read_bytes(iso_file, offset + input_offset, size_to_read)
             self.output_iso.write(data)
 
@@ -207,13 +211,13 @@ class IsoFS(object):
         offset = entry.location * SECTOR_SIZE
         size_to_read = entry.size
 
-        with open(self.iso_path, 'rb') as iso_file:
+        with open(self.iso_path, "rb") as iso_file:
             iso_file.seek(offset)
             data = BytesIO(iso_file.read(size_to_read))
         return data
 
     # used to read very large files from the iso in chunks
-    def read_file_in_chunks(self, path, chunk_size=1024*1024):
+    def read_file_in_chunks(self, path, chunk_size=1024 * 1024):
         entry = self.find_by_path(path)
         assert entry is not None
 
@@ -224,7 +228,7 @@ class IsoFS(object):
         while size_remaining > 0:
             size_to_read = min(size_remaining, chunk_size)
 
-            with open(self.iso_path, 'rb') as iso_file:
+            with open(self.iso_path, "rb") as iso_file:
                 data = read_bytes(iso_file, base_offset + current_offset, size_to_read)
 
             size_remaining -= size_to_read
@@ -232,7 +236,7 @@ class IsoFS(object):
 
             yield data
 
-    def write_file_in_chunks(self, data, chunk_size=1024*1024):
+    def write_file_in_chunks(self, data, chunk_size=1024 * 1024):
         # from https://stackoverflow.com/questions/519633/lazy-method-for-reading-big-file-in-python
         size = 0
         while True:
@@ -276,7 +280,7 @@ class IsoFS(object):
             if not self.find_by_path(path):
                 self.add_new_file(path, self.changes[path])
 
-        self.output_iso = open(output_path, 'wb')
+        self.output_iso = open(output_path, "wb")
 
         # write back files in the order they were original in
         file_entries_in_order = [entry for path, entry in self.file_entries.items()]
@@ -318,6 +322,7 @@ class IsoFS(object):
 
         self.output_iso.close()
         self.output_iso = None
+
 
 # various tests/examples of how the api will be used
 # the actual functionally the randomizer will use is:
